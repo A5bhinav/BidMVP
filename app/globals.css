@@ -1,33 +1,51 @@
+/* app/globals.css
+ * Global styles for the entire application
+ * Includes Tailwind setup, resets, and mobile optimizations
+ */
+
+/* Import Tailwind CSS utility classes */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Universal box model reset - makes sizing more predictable */
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
 }
 
+/* Full viewport height and width for mobile-first design */
 html,
 body {
   height: 100%;
   width: 100%;
+  /* Smooth font rendering on macOS and iOS */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
+  /* Prevent scrolling - we want a fixed mobile app experience */
   overflow: hidden;
   background: white;
+  /* Improve touch responsiveness - prevents delays on mobile */
   touch-action: manipulation;
 }
 
-/* Safe area support for mobile devices */
+/* Safe area support for devices with notches (iPhone X and newer)
+ * Uses the larger of 2.5rem or the device's safe area inset
+ * This prevents content from being hidden behind notches or home indicators
+ */
 .safe-area-bottom {
   padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
 }
 
-/* Better button touch targets for mobile */
+/* Mobile touch optimizations for buttons
+ * - Removes blue highlight on tap (iOS/Android)
+ * - Prevents text selection when tapping buttons
+ * - Ensures immediate touch response without delays
+ */
 button {
   -webkit-tap-highlight-color: transparent;
   user-select: none;

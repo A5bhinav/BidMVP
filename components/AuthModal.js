@@ -1,52 +1,82 @@
+// AuthModal.js
+// Reusable modal component for both login and signup functionality
+// Props:
+//   - isOpen: boolean to control modal visibility
+//   - onClose: callback function to close the modal
+//   - mode: 'login' or 'signup' to determine which form to show
+
 'use client'
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
+  // Local state for form inputs and UI feedback
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false) // Shows loading state during API calls
+  const [error, setError] = useState(null) // Stores error messages to display to user
+  const [success, setSuccess] = useState(false) // Shows success message after signup
+  
+  // Get authentication functions from our auth context
   const { signIn, signUp } = useAuth()
 
+  // Determine if we're in login or signup mode
   const isLogin = mode === 'login'
 
+  // Handle form submission for both login and signup
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
     setSuccess(false)
+
+    // CLIENT-SIDE VALIDATION: Only allow .edu emails to sign up
+    // This provides instant feedback before hitting the server
+    // Note: Also enforced at database level for security
+    if (!isLogin && !email.toLowerCase().endsWith('.edu')) {
+      setError('Only .edu email addresses are allowed to sign up')
+      return
+    }
+
     setLoading(true)
 
     try {
+      // Call appropriate auth function based on mode
       const { error } = isLogin
         ? await signIn(email, password)
         : await signUp(email, password)
 
       if (error) throw error
 
+      // Handle success differently for login vs signup
       if (!isLogin) {
+        // Signup: Show success message and clear form
+        // User needs to verify email before they can log in
         setSuccess(true)
         setEmail('')
         setPassword('')
       } else {
+        // Login: Close modal immediately (user is now authenticated)
         onClose()
       }
     } catch (error) {
+      // Display any errors from Supabase
       setError(error.message)
     } finally {
       setLoading(false)
     }
   }
 
+  // Don't render anything if modal is closed
   if (!isOpen) return null
 
   return (
+    // Modal overlay - clicking outside closes the modal
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6"
       onClick={onClose}
     >
+      {/* Modal content - prevent clicks from closing modal */}
       <div
         className="bg-white w-full max-w-md p-8 relative"
         onClick={(e) => e.stopPropagation()}
@@ -95,7 +125,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
-              placeholder="you@example.com"
+              placeholder={isLogin ? "you@example.com" : "you@school.edu"}
             />
           </div>
 

@@ -1,6 +1,11 @@
 {
+  // jsconfig.json
+  // JavaScript project configuration for VSCode and other editors
+  
   "compilerOptions": {
     "paths": {
+      // Enable absolute imports using @ alias
+      // Example: import Button from '@/components/Button' instead of '../../components/Button'
       "@/*": ["./*"]
     }
   }
