@@ -9,7 +9,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { mockSendPhoneVerificationCode, mockVerifyPhoneCode } from '@/lib/mocks/userFunctions'
+import { sendPhoneVerificationCode, verifyPhoneCode } from '@/lib/supabase/phone'
 
 export default function PhoneVerificationModal({ 
   isOpen, 
@@ -62,28 +62,30 @@ export default function PhoneVerificationModal({
     setLoading(true)
 
     try {
-      const result = await mockSendPhoneVerificationCode(phone)
+      const result = await sendPhoneVerificationCode(phone)
       
-      if (result.success) {
-        setStep('code')
-        setSuccess(true)
-        setCanResend(false)
-        setResendCountdown(60) // 60 second cooldown
-        
-        // Start countdown timer
-        const timer = setInterval(() => {
-          setResendCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer)
-              setCanResend(true)
-              return 0
-            }
-            return prev - 1
-          })
-        }, 1000)
-      } else {
-        setError(result.message || 'Failed to send verification code')
+      if (result.error) {
+        setError(result.error.message || 'Failed to send verification code')
+        return
       }
+
+      // Success - move to code step
+      setStep('code')
+      setSuccess(true)
+      setCanResend(false)
+      setResendCountdown(60) // 60 second cooldown
+      
+      // Start countdown timer
+      const timer = setInterval(() => {
+        setResendCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            setCanResend(true)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
     } catch (err) {
       setError(err.message || 'Failed to send verification code')
     } finally {
@@ -104,13 +106,18 @@ export default function PhoneVerificationModal({
     setLoading(true)
 
     try {
-      const result = await mockVerifyPhoneCode(phone, code)
+      const result = await verifyPhoneCode(phone, code)
       
-      if (result.verified) {
+      if (result.error) {
+        setError(result.error.message || 'Invalid verification code')
+        return
+      }
+
+      if (result.data?.verified) {
         onVerified(phone)
         handleClose()
       } else {
-        setError(result.error || 'Invalid verification code')
+        setError('Invalid verification code')
       }
     } catch (err) {
       setError(err.message || 'Failed to verify code')
@@ -134,23 +141,27 @@ export default function PhoneVerificationModal({
     setLoading(true)
 
     try {
-      const result = await mockSendPhoneVerificationCode(phone)
-      if (result.success) {
-        setSuccess(true)
-        setCanResend(false)
-        setResendCountdown(60)
-        
-        const timer = setInterval(() => {
-          setResendCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer)
-              setCanResend(true)
-              return 0
-            }
-            return prev - 1
-          })
-        }, 1000)
+      const result = await sendPhoneVerificationCode(phone)
+      if (result.error) {
+        setError(result.error.message || 'Failed to resend code')
+        return
       }
+
+      // Success
+      setSuccess(true)
+      setCanResend(false)
+      setResendCountdown(60)
+      
+      const timer = setInterval(() => {
+        setResendCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            setCanResend(true)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
     } catch (err) {
       setError(err.message || 'Failed to resend code')
     } finally {
