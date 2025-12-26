@@ -4,6 +4,7 @@
 // This route exchanges the verification token for a session
 
 import { createClient } from '@/lib/supabase/server'
+import { checkProfileComplete } from '@/lib/supabase/users'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
@@ -21,9 +22,24 @@ export async function GET(request) {
     
     if (!error) {
       // Success! User is now authenticated
-      // Redirect to the specified next URL or home page
-      // If profile is incomplete, they'll be redirected to onboarding by middleware
-      return NextResponse.redirect(new URL(next, request.url))
+      // Get the user from the session to check profile status
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Check if user profile is complete
+        const { data: profileStatus, error: profileError } = await checkProfileComplete(user.id)
+        
+        // If profile check fails or profile is incomplete, redirect to onboarding
+        if (profileError || !profileStatus?.complete) {
+          return NextResponse.redirect(new URL('/onboarding', request.url))
+        }
+        
+        // Profile is complete, redirect to the specified next URL or home page
+        return NextResponse.redirect(new URL(next, request.url))
+      }
+      
+      // If we can't get user, redirect to onboarding as fallback
+      return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }
 

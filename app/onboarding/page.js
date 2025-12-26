@@ -22,7 +22,7 @@ export default function OnboardingPage() {
 
   // Check profile completion on mount
   useEffect(() => {
-    const checkProfile = async () => {
+    const verifyProfileStatus = async () => {
       if (authLoading) return // Wait for auth to load
 
       if (!user) {
@@ -58,7 +58,7 @@ export default function OnboardingPage() {
       }
     }
 
-    checkProfile()
+    verifyProfileStatus()
   }, [user, authLoading, router])
 
   // Handle profile submission
