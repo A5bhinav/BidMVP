@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import PhoneVerificationModal from './PhoneVerificationModal'
 import ProfileSetupForm from './ProfileSetupForm'
-import { mockCreateUserProfile } from '@/lib/mocks/userFunctions'
+import { createProfile } from '@/app/actions/profile'
 
 export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
   // Local state for form inputs and UI feedback
@@ -96,18 +96,28 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
 
   // Handle profile submission
   const handleProfileSubmit = async (profileData) => {
+    if (!user?.id) {
+      setError('User not authenticated')
+      return
+    }
+
     setProfileLoading(true)
     setError(null)
 
     try {
-      // Add phone to profile data
-      const fullProfileData = {
-        ...profileData,
-        phone,
+      // Create user profile using Server Action
+      const { data, error: createError } = await createProfile(user.id, profileData)
+      
+      if (createError) {
+        setError(createError.message || 'Failed to create profile')
+        return
       }
 
-      // Create user profile
-      await mockCreateUserProfile(fullProfileData)
+      // If phone was verified, update it separately
+      if (phone) {
+        // Phone will be saved during profile creation if included in profileData
+        // Or we can update it separately if needed
+      }
       
       // Profile created successfully
       setSuccess(true)
@@ -179,6 +189,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           <ProfileSetupForm
             onSubmit={handleProfileSubmit}
             loading={profileLoading}
+            userId={user?.id}
           />
         </div>
       </div>

@@ -4,13 +4,14 @@
 //   - onSubmit: function(profileData) - called when form is submitted
 //   - initialData: object (optional) - pre-filled form data
 //   - loading: boolean (optional) - external loading state
+//   - userId: string (required) - User ID for photo upload
 
 'use client'
 
 import { useState } from 'react'
 import PhotoUpload from './PhotoUpload'
 
-export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: externalLoading = false }) {
+export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: externalLoading = false, userId }) {
   const [formData, setFormData] = useState({
     name: initialData.name || '',
     year: initialData.year || '',
@@ -209,6 +210,7 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
         onChange={(url) => handleChange('profile_pic', url)}
         required
         error={errors.profile_pic}
+        userId={userId}
       />
 
       {/* Social Links Section */}
