@@ -176,8 +176,8 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
               <span className="text-bodySmall font-semibold text-gray-medium">Step 3 of 3</span>
               <span className="text-bodySmall font-semibold text-neutral-black">Profile Setup</span>
             </div>
-            <div className="w-full bg-gray-light h-2 rounded-full">
-              <div className="bg-primary-accent h-2 rounded-full transition-all" style={{ width: '100%' }}></div>
+            <div className="w-full bg-gray-border h-2 rounded-full">
+              <div className="bg-primary-ui h-2 rounded-full transition-all" style={{ width: '100%' }}></div>
             </div>
           </div>
 
@@ -240,9 +240,9 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
                   {signupStep === 'email' ? 'Create Account' : 'Verify Phone'}
                 </span>
               </div>
-              <div className="w-full bg-gray-light h-2 rounded-full">
+              <div className="w-full bg-gray-border h-2 rounded-full">
                 <div 
-                  className="bg-primary-accent h-2 rounded-full transition-all" 
+                  className="bg-primary-ui h-2 rounded-full transition-all" 
                   style={{ width: signupStep === 'email' ? '33%' : '66%' }}
                 ></div>
               </div>

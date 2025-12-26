@@ -12,12 +12,12 @@ export default function Input({ error, className = '', ...props }) {
   
   const stateClasses = error
     ? 'border-error focus:border-error focus:ring-error'
-    : 'border-gray-light focus:border-primary-accent focus:ring-primary-accent'
+    : 'border-gray-border focus:border-primary-ui focus:ring-primary-ui'
   
   const focusClasses = 'focus:outline-none focus:ring-2 focus:ring-offset-2'
   
   const disabledClasses = props.disabled
-    ? 'bg-neutral-white text-gray-medium cursor-not-allowed'
+    ? 'bg-gray-light text-gray-medium cursor-not-allowed'
     : ''
   
   const combinedClasses = `${baseClasses} ${stateClasses} ${focusClasses} ${disabledClasses} ${className}`.trim()

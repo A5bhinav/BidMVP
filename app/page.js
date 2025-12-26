@@ -36,7 +36,7 @@ export default function Home() {
   }
 
   return (
-    <main className="h-screen w-screen bg-primary-bg flex flex-col">
+    <main className="h-screen w-screen bg-white flex flex-col">
       {/* Center area - shows welcome message if logged in */}
       <div className="flex-1 flex items-center justify-center px-6">
         {user && (
