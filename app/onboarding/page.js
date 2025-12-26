@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { mockCheckProfileComplete, mockCreateUserProfile } from '@/lib/mocks/userFunctions'
+import { checkProfile, createProfile } from '@/app/actions/profile'
 import ProfileSetupForm from '@/components/ProfileSetupForm'
 import Card from '@/components/ui/Card'
 
@@ -35,7 +35,14 @@ export default function OnboardingPage() {
       setError(null)
 
       try {
-        const isComplete = await mockCheckProfileComplete(user.id)
+        const { data, error: checkError } = await checkProfile(user.id)
+        
+        if (checkError) {
+          setError(checkError.message || 'Failed to check profile status')
+          return
+        }
+
+        const isComplete = data?.complete || false
         setProfileComplete(isComplete)
 
         if (isComplete) {
@@ -56,18 +63,22 @@ export default function OnboardingPage() {
 
   // Handle profile submission
   const handleProfileSubmit = async (profileData) => {
-    if (!user) return
+    if (!user?.id) {
+      setError('User not authenticated')
+      return
+    }
 
     setProfileLoading(true)
     setError(null)
 
     try {
-      // Create user profile
-      await mockCreateUserProfile({
-        ...profileData,
-        // Add user ID from auth
-        user_id: user.id,
-      })
+      // Create user profile using Server Action
+      const { data, error: createError } = await createProfile(user.id, profileData)
+      
+      if (createError) {
+        setError(createError.message || 'Failed to create profile')
+        return
+      }
 
       // Profile created successfully
       setProfileComplete(true)

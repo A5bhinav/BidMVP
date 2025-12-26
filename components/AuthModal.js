@@ -31,7 +31,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
   const [profileLoading, setProfileLoading] = useState(false)
   
   // Get authentication functions from our auth context
-  const { signIn, signUp, user } = useAuth()
+  const { signIn, signUp, user, resendConfirmationEmail } = useAuth()
 
   // Determine if we're in login or signup mode
   const isLogin = mode === 'login'
@@ -67,17 +67,33 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
 
     try {
       // Call appropriate auth function based on mode
-      const { error } = isLogin
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthModal.js:66',message:'Before auth call',data:{isLogin,mode,email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      
+      const result = isLogin
         ? await signIn(email, password)
         : await signUp(email, password)
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthModal.js:73',message:'After auth call',data:{hasError:!!result.error,errorMessage:result.error?.message,errorStatus:result.error?.status,hasData:!!result.data,userEmail:result.data?.user?.email,userConfirmed:result.data?.user?.email_confirmed_at,userID:result.data?.user?.id,fullResult:JSON.stringify(result)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
 
-      if (error) throw error
+      if (result.error) throw result.error
 
       // Handle success differently for login vs signup
       if (!isLogin) {
-        // Signup: Move to phone verification step
-        setSignupStep('phone')
-        setPhoneModalOpen(true)
+        // Signup: Check if email confirmation is required
+        // If session is null, email confirmation is required
+        if (!result.data?.session) {
+          // Email confirmation required - show success message
+          setSuccess(true)
+          // Don't proceed to profile setup until email is confirmed
+          // User needs to click confirmation link in email first
+        } else {
+          // Email already confirmed or confirmation disabled - proceed to profile
+          setSignupStep('profile')
+        }
       } else {
         // Login: Close modal immediately (user is now authenticated)
         onClose()
@@ -99,18 +115,22 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
 
   // Handle profile submission
   const handleProfileSubmit = async (profileData) => {
+    if (!user?.id) {
+      setError('User not authenticated')
+      return
+    }
+
     setProfileLoading(true)
     setError(null)
 
     try {
-      // Add phone to profile data
-      const fullProfileData = {
-        ...profileData,
-        phone,
+      // Create user profile using Server Action
+      const { data, error: createError } = await createProfile(user.id, profileData)
+      
+      if (createError) {
+        setError(createError.message || 'Failed to create profile')
+        return
       }
-
-      // Create user profile
-      await mockCreateUserProfile(fullProfileData)
       
       // Profile created successfully
       setSuccess(true)
@@ -182,6 +202,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           <ProfileSetupForm
             onSubmit={handleProfileSubmit}
             loading={profileLoading}
+            userId={user?.id}
           />
         </Card>
       </div>
@@ -297,8 +318,9 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
         </Card>
       </div>
 
-      {/* Phone verification modal */}
-      {!isLogin && (
+      {/* Phone verification modal - DISABLED for MVP */}
+      {/* Uncomment below to re-enable phone verification when SMS provider is configured */}
+      {/* {!isLogin && (
         <PhoneVerificationModal
           isOpen={phoneModalOpen}
           onClose={() => {
@@ -308,7 +330,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           onVerified={handlePhoneVerified}
           initialPhone={phone}
         />
-      )}
+      )} */}
     </>
   )
 }

@@ -54,10 +54,53 @@ export function AuthProvider({ children }) {
   // Create new user account
   // Supabase will send a confirmation email by default
   const signUp = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:56',message:'signUp called',data:{email,hasPassword:!!password},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // Configure signup with proper redirect URL
+    // CRITICAL: Site URL must be set in Supabase Dashboard → Authentication → URL Configuration
+    // It should match your app's URL (e.g., http://localhost:3000 for dev)
+    const signUpOptions = {
       email,
       password,
-    })
+      options: {
+        // Set redirect URL to home page after email confirmation
+        // This must match the Site URL configured in Supabase Dashboard
+        emailRedirectTo: typeof window !== 'undefined' 
+          ? `${window.location.origin}`
+          : undefined,
+        // Note: If emails aren't sending, check Supabase Dashboard settings:
+        // 1. Authentication → Settings → Enable Email Confirmations (must be ON)
+        // 2. Authentication → URL Configuration → Site URL (must match your app URL)
+        // 3. Authentication → Email Templates → Confirm signup (verify template exists)
+      }
+    }
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:69',message:'Before supabase.auth.signUp',data:{email,hasRedirectTo:!!signUpOptions.options.emailRedirectTo,optionsKeys:Object.keys(signUpOptions.options)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    
+    const { data, error } = await supabase.auth.signUp(signUpOptions)
+    
+    // #region agent log
+    const userData = data?.user || {}
+    const confirmationSentAt = userData.confirmation_sent_at
+    const emailConfirmed = userData.email_confirmed_at
+    const recoverySentAt = userData.recovery_sent_at
+    const lastSignInAt = userData.last_sign_in_at
+    fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:84',message:'After supabase.auth.signUp - detailed analysis',data:{hasData:!!data,hasError:!!error,errorMessage:error?.message,errorCode:error?.status,userEmail:userData.email,userID:userData.id,confirmationSentAt:confirmationSentAt,emailConfirmed:emailConfirmed,recoverySentAt:recoverySentAt,lastSignInAt:lastSignInAt,hasSession:!!data?.session,fullUserData:JSON.stringify(userData)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    
+    // Check if email confirmation is actually required
+    // If confirmation_sent_at exists but email_confirmed_at is null, email was sent but not confirmed
+    // If both are null, email might not have been sent
+    if (data?.user && !error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:95',message:'Email confirmation status check',data:{confirmationSentAt:!!confirmationSentAt,emailConfirmed:!!emailConfirmed,emailShouldBeSent:!!confirmationSentAt && !emailConfirmed,emailAlreadyConfirmed:!!emailConfirmed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
+      // #endregion
+    }
+    
     return { data, error }
   }
 
@@ -76,6 +119,35 @@ export function AuthProvider({ children }) {
     return { error }
   }
 
+  // Resend confirmation email
+  const resendConfirmationEmail = async (email) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:105',message:'resendConfirmationEmail called',data:{email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+    
+    const resendOptions = {
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' 
+          ? `${window.location.origin}`
+          : undefined,
+      }
+    }
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:117',message:'Before resend - options',data:{email,hasRedirectTo:!!resendOptions.options.emailRedirectTo},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+    
+    const { data, error } = await supabase.auth.resend(resendOptions)
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.js:123',message:'After resend confirmation',data:{hasData:!!data,hasError:!!error,errorMessage:error?.message,errorCode:error?.status,errorName:error?.name,fullError:error?JSON.stringify(error):null,fullData:data?JSON.stringify(data):null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+    
+    return { data, error }
+  }
+
   // Package everything we want to expose to consuming components
   const value = {
     user,        // Current user object or null
@@ -83,6 +155,7 @@ export function AuthProvider({ children }) {
     signUp,      // Function to create account
     signIn,      // Function to log in
     signOut,     // Function to log out
+    resendConfirmationEmail, // Function to resend confirmation email
   }
 
   // Provide auth state and functions to all child components

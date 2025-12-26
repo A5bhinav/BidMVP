@@ -5,13 +5,14 @@
 //   - onChange: function (called with file or URL)
 //   - required: boolean (default: false)
 //   - error: string (error message to display)
+//   - userId: string (required) - User ID for upload
 
 'use client'
 
 import { useState, useRef } from 'react'
-import { mockUploadProfilePhoto } from '@/lib/mocks/userFunctions'
+import { uploadProfilePhoto } from '@/app/actions/profile'
 
-export default function PhotoUpload({ value, onChange, required = false, error }) {
+export default function PhotoUpload({ value, onChange, required = false, error, userId }) {
   const [preview, setPreview] = useState(value || null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
@@ -36,6 +37,11 @@ export default function PhotoUpload({ value, onChange, required = false, error }
       return
     }
 
+    if (!userId) {
+      setUploadError('User ID is required for photo upload')
+      return
+    }
+
     setUploadError(null)
     setUploading(true)
 
@@ -47,9 +53,19 @@ export default function PhotoUpload({ value, onChange, required = false, error }
       }
       reader.readAsDataURL(file)
 
-      // Upload file (using mock for now)
-      const result = await mockUploadProfilePhoto(file)
-      onChange(result.url)
+      // Upload file using Server Action
+      const formData = new FormData()
+      formData.append('file', file)
+      const result = await uploadProfilePhoto(userId, formData)
+      
+      if (result.error) {
+        setUploadError(result.error.message || 'Failed to upload photo')
+        setPreview(null)
+        return
+      }
+
+      // Success - update parent with photo URL
+      onChange(result.data.url)
     } catch (err) {
       setUploadError(err.message || 'Failed to upload photo')
       setPreview(null)
