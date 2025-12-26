@@ -9,7 +9,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { sendPhoneVerificationCode, verifyPhoneCode } from '@/lib/supabase/phone'
+import { mockSendPhoneVerificationCode, mockVerifyPhoneCode } from '@/lib/mocks/userFunctions'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 
 export default function PhoneVerificationModal({ 
   isOpen, 
@@ -199,34 +202,34 @@ export default function PhoneVerificationModal({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6"
       onClick={handleClose}
     >
-      <div
-        className="bg-white w-full max-w-md p-8 relative"
+      <Card
+        className="w-full max-w-md relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center"
+          className="absolute top-4 right-4 text-gray-medium hover:text-neutral-black transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center"
           aria-label="Close"
         >
           ×
         </button>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold mb-6">
+        <h2 className="text-heading1 text-neutral-black mb-6">
           {step === 'phone' ? 'Verify Phone Number' : 'Enter Verification Code'}
         </h2>
 
         {/* Success message */}
         {success && step === 'code' && (
-          <div className="mb-4 p-4 bg-green-50 border-2 border-green-500 text-green-700">
+          <div className="mb-4 p-4 bg-green-50 border-2 border-success text-success rounded-md">
             Verification code sent to {phone}
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border-2 border-red-500 text-red-700">
+          <div className="mb-4 p-4 bg-red-50 border-2 border-error text-error rounded-md">
             {error}
           </div>
         )}
@@ -237,31 +240,32 @@ export default function PhoneVerificationModal({
             <div>
               <label
                 htmlFor="phone"
-                className="block text-sm font-semibold mb-2"
+                className="block text-bodySmall font-semibold mb-2 text-neutral-black"
               >
                 Phone Number
               </label>
-              <input
+              <Input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
                 placeholder="+1234567890"
                 required
-                className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-caption text-gray-medium">
                 Include country code (e.g., +1 for US)
               </p>
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading || !phone}
-              className="w-full bg-black text-white py-4 font-semibold text-base hover:bg-gray-900 active:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="large"
+              className="w-full"
             >
               {loading ? 'Sending...' : 'Send Verification Code'}
-            </button>
+            </Button>
           </form>
         )}
 
@@ -271,11 +275,11 @@ export default function PhoneVerificationModal({
             <div>
               <label
                 htmlFor="code"
-                className="block text-sm font-semibold mb-2"
+                className="block text-bodySmall font-semibold mb-2 text-neutral-black"
               >
                 Verification Code
               </label>
-              <input
+              <Input
                 id="code"
                 type="text"
                 inputMode="numeric"
@@ -284,20 +288,22 @@ export default function PhoneVerificationModal({
                 placeholder="123456"
                 maxLength={6}
                 required
-                className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 text-center text-2xl tracking-widest"
+                className="text-center text-2xl tracking-widest"
               />
-              <p className="mt-1 text-xs text-gray-500 text-center">
+              <p className="mt-1 text-caption text-gray-medium text-center">
                 Enter the 6-digit code sent to {phone}
               </p>
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="w-full bg-black text-white py-4 font-semibold text-base hover:bg-gray-900 active:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="large"
+              className="w-full"
             >
               {loading ? 'Verifying...' : 'Verify Code'}
-            </button>
+            </Button>
 
             {/* Resend code */}
             <div className="text-center">
@@ -305,12 +311,12 @@ export default function PhoneVerificationModal({
                 <button
                   type="button"
                   onClick={handleResendCode}
-                  className="text-sm text-black underline hover:no-underline"
+                  className="text-bodySmall text-neutral-black underline hover:no-underline transition-colors"
                 >
                   Resend code
                 </button>
               ) : (
-                <p className="text-sm text-gray-500">
+                <p className="text-bodySmall text-gray-medium">
                   Resend code in {resendCountdown}s
                 </p>
               )}
@@ -324,13 +330,13 @@ export default function PhoneVerificationModal({
                 setCode('')
                 setError(null)
               }}
-              className="w-full text-sm text-gray-600 hover:text-black transition-colors"
+              className="w-full text-bodySmall text-gray-medium hover:text-neutral-black transition-colors"
             >
               Change phone number
             </button>
           </form>
         )}
-      </div>
+      </Card>
     </div>
   )
 }

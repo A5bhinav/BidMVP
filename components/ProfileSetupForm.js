@@ -10,6 +10,8 @@
 
 import { useState } from 'react'
 import PhotoUpload from './PhotoUpload'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 
 export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: externalLoading = false, userId }) {
   const [formData, setFormData] = useState({
@@ -128,23 +130,21 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
       <div>
         <label
           htmlFor="name"
-          className="block text-sm font-semibold mb-2"
+          className="block text-bodySmall font-semibold mb-2 text-neutral-black"
         >
-          Name <span className="text-red-500">*</span>
+          Name <span className="text-error">*</span>
         </label>
-        <input
+        <Input
           id="name"
           type="text"
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
           required
-          className={`w-full px-4 py-3 border-2 ${
-            errors.name ? 'border-red-500' : 'border-black'
-          } focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2`}
+          error={errors.name}
           placeholder="Enter your name"
         />
         {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+          <p className="mt-1 text-bodySmall text-error">{errors.name}</p>
         )}
       </div>
 
@@ -152,18 +152,18 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
       <div>
         <label
           htmlFor="year"
-          className="block text-sm font-semibold mb-2"
+          className="block text-bodySmall font-semibold mb-2 text-neutral-black"
         >
-          Year <span className="text-red-500">*</span>
+          Year <span className="text-error">*</span>
         </label>
         <select
           id="year"
           value={formData.year}
           onChange={(e) => handleChange('year', e.target.value)}
           required
-          className={`w-full px-4 py-3 border-2 ${
-            errors.year ? 'border-red-500' : 'border-black'
-          } focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 bg-white`}
+          className={`w-full px-4 py-3 rounded-md border transition-all ${
+            errors.year ? 'border-error focus:border-error focus:ring-error' : 'border-gray-light focus:border-primary-accent focus:ring-primary-accent'
+          } focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-base`}
         >
           <option value="">Select year</option>
           <option value="1">1st Year</option>
@@ -173,7 +173,7 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
           <option value="5">5th Year / Graduate</option>
         </select>
         {errors.year && (
-          <p className="mt-1 text-sm text-red-600">{errors.year}</p>
+          <p className="mt-1 text-bodySmall text-error">{errors.year}</p>
         )}
       </div>
 
@@ -181,18 +181,18 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
       <div>
         <label
           htmlFor="gender"
-          className="block text-sm font-semibold mb-2"
+          className="block text-bodySmall font-semibold mb-2 text-neutral-black"
         >
-          Gender <span className="text-red-500">*</span>
+          Gender <span className="text-error">*</span>
         </label>
         <select
           id="gender"
           value={formData.gender}
           onChange={(e) => handleChange('gender', e.target.value)}
           required
-          className={`w-full px-4 py-3 border-2 ${
-            errors.gender ? 'border-red-500' : 'border-black'
-          } focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 bg-white`}
+          className={`w-full px-4 py-3 rounded-md border transition-all ${
+            errors.gender ? 'border-error focus:border-error focus:ring-error' : 'border-gray-light focus:border-primary-accent focus:ring-primary-accent'
+          } focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-base`}
         >
           <option value="">Select gender</option>
           <option value="M">Male</option>
@@ -200,7 +200,7 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
           <option value="X">Non-binary / Other</option>
         </select>
         {errors.gender && (
-          <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
+          <p className="mt-1 text-bodySmall text-error">{errors.gender}</p>
         )}
       </div>
 
@@ -214,23 +214,22 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
       />
 
       {/* Social Links Section */}
-      <div className="space-y-4 pt-4 border-t-2 border-gray-200">
-        <h3 className="text-lg font-semibold">Social Links (Optional)</h3>
+      <div className="space-y-4 pt-4 border-t-2 border-gray-light">
+        <h3 className="text-heading2 text-neutral-black">Social Links (Optional)</h3>
         
         {/* Instagram */}
         <div>
           <label
             htmlFor="instagram"
-            className="block text-sm font-semibold mb-2"
+            className="block text-bodySmall font-semibold mb-2 text-neutral-black"
           >
             Instagram
           </label>
-          <input
+          <Input
             id="instagram"
             type="text"
             value={formData.social_links.instagram}
             onChange={(e) => handleSocialLinkChange('instagram', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
             placeholder="@username"
           />
         </div>
@@ -239,16 +238,15 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
         <div>
           <label
             htmlFor="snapchat"
-            className="block text-sm font-semibold mb-2"
+            className="block text-bodySmall font-semibold mb-2 text-neutral-black"
           >
             Snapchat
           </label>
-          <input
+          <Input
             id="snapchat"
             type="text"
             value={formData.social_links.snapchat}
             onChange={(e) => handleSocialLinkChange('snapchat', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
             placeholder="username"
           />
         </div>
@@ -257,16 +255,15 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
         <div>
           <label
             htmlFor="vsco"
-            className="block text-sm font-semibold mb-2"
+            className="block text-bodySmall font-semibold mb-2 text-neutral-black"
           >
             VSCO
           </label>
-          <input
+          <Input
             id="vsco"
             type="text"
             value={formData.social_links.vsco}
             onChange={(e) => handleSocialLinkChange('vsco', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
             placeholder="username"
           />
         </div>
@@ -275,16 +272,15 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
         <div>
           <label
             htmlFor="tiktok"
-            className="block text-sm font-semibold mb-2"
+            className="block text-bodySmall font-semibold mb-2 text-neutral-black"
           >
             TikTok
           </label>
-          <input
+          <Input
             id="tiktok"
             type="text"
             value={formData.social_links.tiktok}
             onChange={(e) => handleSocialLinkChange('tiktok', e.target.value)}
-            className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
             placeholder="@username"
           />
         </div>
@@ -292,19 +288,21 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
 
       {/* Submit Error */}
       {errors.submit && (
-        <div className="p-4 bg-red-50 border-2 border-red-500 text-red-700">
+        <div className="p-4 bg-red-50 border-2 border-error text-error rounded-md">
           {errors.submit}
         </div>
       )}
 
       {/* Submit Button */}
-      <button
+      <Button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-black text-white py-4 font-semibold text-base hover:bg-gray-900 active:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="primary"
+        size="large"
+        className="w-full"
       >
         {isLoading ? 'Saving...' : 'Complete Profile'}
-      </button>
+      </Button>
     </form>
   )
 }

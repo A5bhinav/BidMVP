@@ -94,8 +94,8 @@ export default function PhotoUpload({ value, onChange, required = false, error, 
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-semibold mb-2">
-        Profile Photo {required && <span className="text-red-500">*</span>}
+      <label className="block text-bodySmall font-semibold mb-2 text-neutral-black">
+        Profile Photo {required && <span className="text-error">*</span>}
       </label>
 
       {/* Upload area */}
@@ -105,8 +105,8 @@ export default function PhotoUpload({ value, onChange, required = false, error, 
           relative border-2 border-dashed rounded-lg p-6 cursor-pointer
           transition-all
           ${hasError 
-            ? 'border-red-500 bg-red-50' 
-            : 'border-black hover:bg-gray-50'
+            ? 'border-error bg-red-50' 
+            : 'border-gray-light hover:bg-gray-light'
           }
           ${uploading ? 'opacity-50 cursor-wait' : ''}
         `}
@@ -132,7 +132,7 @@ export default function PhotoUpload({ value, onChange, required = false, error, 
               <button
                 type="button"
                 onClick={handleRemove}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
+                className="absolute top-2 right-2 bg-error text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#DC2626] transition-colors"
                 aria-label="Remove photo"
               >
                 ×
@@ -144,13 +144,13 @@ export default function PhotoUpload({ value, onChange, required = false, error, 
           <div className="text-center">
             {uploading ? (
               <div className="space-y-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent mx-auto"></div>
-                <p className="text-sm text-gray-600">Uploading...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-accent border-t-transparent mx-auto"></div>
+                <p className="text-bodySmall text-gray-medium">Uploading...</p>
               </div>
             ) : (
               <div className="space-y-2">
                 <svg
-                  className="w-12 h-12 mx-auto text-gray-400"
+                  className="w-12 h-12 mx-auto text-gray-medium"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -162,8 +162,8 @@ export default function PhotoUpload({ value, onChange, required = false, error, 
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <p className="text-sm font-semibold">Click to upload photo</p>
-                <p className="text-xs text-gray-500">JPEG, PNG, or WebP (max 5MB)</p>
+                <p className="text-bodySmall font-semibold text-neutral-black">Click to upload photo</p>
+                <p className="text-caption text-gray-medium">JPEG, PNG, or WebP (max 5MB)</p>
               </div>
             )}
           </div>
@@ -172,7 +172,7 @@ export default function PhotoUpload({ value, onChange, required = false, error, 
 
       {/* Error message */}
       {displayError && (
-        <p className="text-sm text-red-600">{displayError}</p>
+        <p className="text-bodySmall text-error">{displayError}</p>
       )}
     </div>
   )

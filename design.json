@@ -1,0 +1,610 @@
+{
+  "designSystem": {
+    "name": "Modern Dashboard Design System",
+    "version": "1.0.0",
+    "description": "A clean, minimalist design system with dark gray backgrounds, light gray cards, and red accents. Optimized for modern web applications with a focus on clarity and user experience.",
+    
+    "designPrinciples": {
+      "clarity": "Every element should have clear purpose and hierarchy. Information should be scannable and digestible.",
+      "consistency": "Reusable components maintain visual consistency across the application.",
+      "minimalism": "Clean, uncluttered interfaces with generous white space. Avoid unnecessary decorative elements.",
+      "accessibility": "High contrast ratios, clear typography hierarchy, and touch-friendly interactive elements.",
+      "modernity": "Contemporary design with rounded corners, soft shadows, and smooth interactions."
+    },
+    
+    "colorPalette": {
+      "primary": {
+        "background": {
+          "value": "#1F2937",
+          "description": "Dark gray background - the main canvas color for the entire application",
+          "usage": "Primary background for pages, dashboards, and main content areas"
+        },
+        "accent": {
+          "value": "#DC2626",
+          "description": "Red accent color - used for progress indicators, active states, and primary actions",
+          "usage": "Progress bars, toggle switches (active), interactive highlights, and brand elements"
+        }
+      },
+      "neutral": {
+        "white": {
+          "value": "#F3F4F6",
+          "description": "Light gray for card backgrounds and content containers",
+          "usage": "Card backgrounds, modal backgrounds, input fields"
+        },
+        "black": {
+          "value": "#000000",
+          "description": "Pure black for primary text and high-contrast elements",
+          "usage": "Main headings, body text, important labels"
+        },
+        "gray": {
+          "light": {
+            "value": "#E5E7EB",
+            "description": "Light gray for borders, dividers, and subtle backgrounds",
+            "usage": "Card borders, input borders, disabled states"
+          },
+          "medium": {
+            "value": "#9CA3AF",
+            "description": "Medium gray for secondary text and inactive elements",
+            "usage": "Secondary text, placeholder text, inactive dates in calendar"
+          },
+          "dark": {
+            "value": "#4B5563",
+            "description": "Dark gray for tertiary text and subtle emphasis",
+            "usage": "Descriptions, metadata, timestamps"
+          }
+        }
+      },
+      "semantic": {
+        "success": {
+          "value": "#10B981",
+          "description": "Green for success states, positive actions, and accept buttons",
+          "usage": "Success messages, accept buttons, positive indicators"
+        },
+        "error": {
+          "value": "#EF4444",
+          "description": "Red for errors, destructive actions, and deny buttons",
+          "usage": "Error messages, deny buttons, destructive actions"
+        },
+        "warning": {
+          "value": "#F59E0B",
+          "description": "Orange/amber for warnings and caution states",
+          "usage": "Warning messages, caution indicators"
+        },
+        "info": {
+          "value": "#3B82F6",
+          "description": "Blue for informational messages and neutral actions",
+          "usage": "Info messages, informational badges"
+        }
+      }
+    },
+    
+    "typography": {
+      "fontFamily": {
+        "primary": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        "description": "Modern, clean sans-serif font family. Inter is preferred for its excellent readability and modern aesthetic."
+      },
+      "scale": {
+        "display": {
+          "size": "2rem",
+          "lineHeight": "1.2",
+          "weight": "700",
+          "letterSpacing": "-0.02em",
+          "usage": "Large profile names, major headings, hero text"
+        },
+        "heading1": {
+          "size": "1.5rem",
+          "lineHeight": "1.3",
+          "weight": "700",
+          "letterSpacing": "-0.01em",
+          "usage": "Card titles, section headings, project names"
+        },
+        "heading2": {
+          "size": "1.25rem",
+          "lineHeight": "1.4",
+          "weight": "600",
+          "letterSpacing": "0",
+          "usage": "Subsection headings, card subtitles"
+        },
+        "heading3": {
+          "size": "1.125rem",
+          "lineHeight": "1.4",
+          "weight": "600",
+          "letterSpacing": "0",
+          "usage": "Smaller headings, list item titles"
+        },
+        "body": {
+          "size": "1rem",
+          "lineHeight": "1.5",
+          "weight": "400",
+          "letterSpacing": "0",
+          "usage": "Body text, descriptions, general content"
+        },
+        "bodySmall": {
+          "size": "0.875rem",
+          "lineHeight": "1.5",
+          "weight": "400",
+          "letterSpacing": "0",
+          "usage": "Secondary text, metadata, timestamps"
+        },
+        "caption": {
+          "size": "0.75rem",
+          "lineHeight": "1.4",
+          "weight": "400",
+          "letterSpacing": "0.01em",
+          "usage": "Labels, captions, helper text"
+        }
+      },
+      "hierarchy": {
+        "primary": "Use display or heading1 for the most important information (e.g., user names, project titles)",
+        "secondary": "Use heading2 or heading3 for supporting information (e.g., job titles, section headers)",
+        "tertiary": "Use body or bodySmall for descriptions and general content",
+        "metadata": "Use caption or bodySmall for timestamps, labels, and less important information"
+      }
+    },
+    
+    "spacing": {
+      "scale": {
+        "xs": "0.25rem",
+        "sm": "0.5rem",
+        "md": "1rem",
+        "lg": "1.5rem",
+        "xl": "2rem",
+        "2xl": "3rem",
+        "3xl": "4rem"
+      },
+      "guidelines": {
+        "cardPadding": "1.5rem",
+        "cardGap": "1.5rem",
+        "sectionSpacing": "2rem",
+        "elementSpacing": "1rem",
+        "tightSpacing": "0.5rem",
+        "looseSpacing": "2rem"
+      },
+      "layout": {
+        "containerPadding": "1.5rem",
+        "gridGap": "1.5rem",
+        "cardInternalPadding": "1.5rem"
+      }
+    },
+    
+    "borderRadius": {
+      "none": "0",
+      "sm": "0.25rem",
+      "md": "0.5rem",
+      "lg": "0.75rem",
+      "xl": "1rem",
+      "full": "9999px",
+      "default": "0.75rem",
+      "description": "Rounded corners are a key design element. Cards use 'lg' (0.75rem), buttons use 'md' (0.5rem), and avatars use 'full' (circular)."
+    },
+    
+    "shadows": {
+      "none": "none",
+      "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+      "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+      "default": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      "description": "Subtle shadows for depth. Cards use 'md' shadow to create elevation without being heavy."
+    },
+    
+    "components": {
+      "card": {
+        "description": "Primary container component for all content sections",
+        "styles": {
+          "backgroundColor": "#F3F4F6",
+          "borderRadius": "0.75rem",
+          "padding": "1.5rem",
+          "boxShadow": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          "border": "none"
+        },
+        "variants": {
+          "default": "Light gray background with subtle shadow",
+          "elevated": "Slightly stronger shadow for emphasis",
+          "flat": "No shadow for minimal appearance"
+        },
+        "layout": {
+          "spacing": "Maintain 1.5rem gap between cards in grid layouts",
+          "padding": "Always use 1.5rem internal padding for card content"
+        }
+      },
+      
+      "button": {
+        "description": "Interactive action elements with clear visual hierarchy",
+        "styles": {
+          "borderRadius": "0.5rem",
+          "padding": "0.5rem 1rem",
+          "fontWeight": "500",
+          "fontSize": "0.875rem",
+          "transition": "all 0.2s ease",
+          "cursor": "pointer",
+          "border": "none"
+        },
+        "variants": {
+          "primary": {
+            "backgroundColor": "#10B981",
+            "color": "white",
+            "description": "Success green button for primary positive actions (Accept, Confirm) - uses semantic success color"
+          },
+          "secondary": {
+            "backgroundColor": "#E5E7EB",
+            "color": "#4B5563",
+            "description": "Gray button for secondary actions (Deny, Cancel)"
+          },
+          "tertiary": {
+            "backgroundColor": "#374151",
+            "color": "#DC2626",
+            "description": "Dark gray button with red text for tertiary actions (View all, View details)"
+          },
+          "ghost": {
+            "backgroundColor": "transparent",
+            "color": "#4B5563",
+            "description": "Transparent button for subtle actions"
+          }
+        },
+        "states": {
+          "hover": "Slightly darker shade of base color",
+          "active": "Even darker, with slight scale transform (0.98)",
+          "disabled": "Reduced opacity (0.5) and no pointer events"
+        },
+        "sizing": {
+          "small": "0.375rem 0.75rem, fontSize: 0.75rem",
+          "medium": "0.5rem 1rem, fontSize: 0.875rem",
+          "large": "0.75rem 1.5rem, fontSize: 1rem"
+        }
+      },
+      
+      "avatar": {
+        "description": "Circular profile pictures for users and team members",
+        "styles": {
+          "borderRadius": "50%",
+          "objectFit": "cover",
+          "border": "2px solid #F3F4F6",
+          "boxShadow": "0 2px 4px rgba(0, 0, 0, 0.1)"
+        },
+        "sizes": {
+          "xs": "1.5rem",
+          "sm": "2rem",
+          "md": "2.5rem",
+          "lg": "4rem",
+          "xl": "6rem"
+        },
+        "grouping": {
+          "overlap": "When displaying multiple avatars, overlap by -0.5rem to show relationships",
+          "maxVisible": "Show 4-5 avatars, then indicate remaining count with a badge"
+        }
+      },
+      
+      "progressIndicator": {
+        "description": "Circular progress bars showing completion percentage",
+        "styles": {
+          "type": "circular",
+          "strokeColor": "#DC2626",
+          "strokeWidth": "8",
+          "backgroundColor": "#E5E7EB",
+          "size": "varies (typically 60-80px diameter)",
+          "textColor": "#DC2626",
+          "textWeight": "600",
+          "textSize": "0.875rem"
+        },
+        "usage": "Display in top-left or top-right of cards to show project/task completion"
+      },
+      
+      "badge": {
+        "description": "Small colored pills for labels, counts, and status indicators",
+        "styles": {
+          "borderRadius": "9999px",
+          "padding": "0.25rem 0.75rem",
+          "fontSize": "0.75rem",
+          "fontWeight": "500",
+          "display": "inline-flex",
+          "alignItems": "center"
+        },
+        "variants": {
+          "count": {
+            "backgroundColor": "#374151",
+            "color": "#DC2626",
+            "usage": "Notification counts, unread indicators"
+          },
+          "tag": {
+            "backgroundColor": "#F3F4F6",
+            "color": "#4B5563",
+            "usage": "Skill tags, category labels"
+          },
+          "status": {
+            "active": "#10B981",
+            "inactive": "#9CA3AF",
+            "usage": "Status indicators"
+          }
+        }
+      },
+      
+      "toggle": {
+        "description": "Switch component for on/off states",
+        "styles": {
+          "width": "3rem",
+          "height": "1.5rem",
+          "borderRadius": "9999px",
+          "transition": "all 0.2s ease",
+          "cursor": "pointer"
+        },
+        "states": {
+          "on": {
+            "backgroundColor": "#DC2626",
+            "thumbPosition": "right",
+            "thumbColor": "white"
+          },
+          "off": {
+            "backgroundColor": "#E5E7EB",
+            "thumbPosition": "left",
+            "thumbColor": "white"
+          }
+        },
+        "thumb": {
+          "size": "1.25rem",
+          "borderRadius": "50%",
+          "boxShadow": "0 2px 4px rgba(0, 0, 0, 0.2)"
+        }
+      },
+      
+      "calendar": {
+        "description": "Date picker and calendar display component",
+        "styles": {
+          "backgroundColor": "#F3F4F6",
+          "borderRadius": "0.75rem",
+          "padding": "1.5rem"
+        },
+        "elements": {
+          "header": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "alignItems": "center",
+            "marginBottom": "1rem",
+            "fontWeight": "600"
+          },
+          "weekdays": {
+            "display": "grid",
+            "gridTemplateColumns": "repeat(7, 1fr)",
+            "gap": "0.5rem",
+            "textAlign": "center",
+            "fontSize": "0.75rem",
+            "color": "#9CA3AF",
+            "marginBottom": "0.5rem"
+          },
+          "dates": {
+            "display": "grid",
+            "gridTemplateColumns": "repeat(7, 1fr)",
+            "gap": "0.5rem"
+          },
+          "dateCell": {
+            "padding": "0.5rem",
+            "textAlign": "center",
+            "borderRadius": "0.5rem",
+            "cursor": "pointer",
+            "transition": "all 0.2s ease"
+          },
+          "dateStates": {
+            "currentMonth": {
+              "color": "#000000"
+            },
+            "otherMonth": {
+              "color": "#9CA3AF"
+            },
+            "selected": {
+              "backgroundColor": "#374151",
+              "color": "#DC2626"
+            },
+            "today": {
+              "backgroundColor": "#DC2626",
+              "color": "white"
+            },
+            "hover": {
+              "backgroundColor": "#F3F4F6"
+            }
+          }
+        }
+      },
+      
+      "notification": {
+        "description": "Individual notification items in a list",
+        "styles": {
+          "padding": "1rem",
+          "borderBottom": "1px solid #E5E7EB",
+          "display": "flex",
+          "gap": "0.75rem",
+          "alignItems": "flex-start"
+        },
+        "elements": {
+          "avatar": {
+            "size": "2.5rem",
+            "flexShrink": "0"
+          },
+          "content": {
+            "flex": "1",
+            "minWidth": "0"
+          },
+          "metadata": {
+            "fontSize": "0.875rem",
+            "color": "#9CA3AF",
+            "marginBottom": "0.25rem"
+          },
+          "message": {
+            "fontSize": "1rem",
+            "color": "#000000",
+            "lineHeight": "1.5"
+          },
+          "actions": {
+            "display": "flex",
+            "gap": "0.5rem",
+            "marginTop": "0.75rem"
+          },
+          "menu": {
+            "icon": "three vertical dots",
+            "color": "#9CA3AF",
+            "cursor": "pointer",
+            "padding": "0.25rem"
+          }
+        }
+      },
+      
+      "input": {
+        "description": "Form input fields and text areas",
+        "styles": {
+          "borderRadius": "0.5rem",
+          "border": "1px solid #E5E7EB",
+          "padding": "0.75rem 1rem",
+          "fontSize": "1rem",
+          "transition": "all 0.2s ease",
+          "backgroundColor": "white"
+        },
+        "states": {
+          "default": {
+            "borderColor": "#E5E7EB"
+          },
+          "focus": {
+            "borderColor": "#DC2626",
+            "outline": "none",
+            "boxShadow": "0 0 0 3px rgba(220, 38, 38, 0.1)"
+          },
+          "error": {
+            "borderColor": "#EF4444"
+          },
+          "disabled": {
+            "backgroundColor": "#F3F4F6",
+            "color": "#9CA3AF",
+            "cursor": "not-allowed"
+          }
+        }
+      },
+      
+      "menu": {
+        "description": "Three-dot menu icon for additional actions",
+        "styles": {
+          "icon": "three vertical dots (⋮)",
+          "color": "#9CA3AF",
+          "cursor": "pointer",
+          "padding": "0.5rem",
+          "borderRadius": "0.25rem",
+          "transition": "all 0.2s ease"
+        },
+        "states": {
+          "hover": {
+            "backgroundColor": "#F3F4F6",
+            "color": "#4B5563"
+          }
+        },
+        "position": "Top-right corner of cards and components"
+      }
+    },
+    
+    "layout": {
+      "grid": {
+        "description": "Responsive grid system for card layouts",
+        "breakpoints": {
+          "mobile": {
+            "columns": "1",
+            "gap": "1rem",
+            "padding": "1rem"
+          },
+          "tablet": {
+            "columns": "2",
+            "gap": "1.5rem",
+            "padding": "1.5rem"
+          },
+          "desktop": {
+            "columns": "3",
+            "gap": "1.5rem",
+            "padding": "1.5rem"
+          }
+        },
+        "cardSizing": {
+          "minHeight": "auto",
+          "maxWidth": "100%"
+        }
+      },
+      "spacing": {
+        "sectionGap": "2rem",
+        "cardGap": "1.5rem",
+        "elementGap": "1rem"
+      }
+    },
+    
+    "interactions": {
+      "transitions": {
+        "default": "all 0.2s ease",
+        "hover": "0.15s ease",
+        "active": "0.1s ease"
+      },
+      "hover": {
+        "description": "Subtle hover effects on interactive elements",
+        "card": "Slight elevation increase (stronger shadow)",
+        "button": "Darker shade, slight scale (1.02)",
+        "avatar": "Slight scale (1.05)"
+      },
+      "active": {
+        "description": "Pressed state for buttons and interactive elements",
+        "scale": "0.98",
+        "duration": "0.1s"
+      }
+    },
+    
+    "composition": {
+      "cardLayout": {
+        "profileCard": {
+          "structure": "Avatar (large, centered) → Name (display size) → Title (body small) → Tags (badges) → Menu icon (top-right)",
+          "spacing": "Avatar: 1rem bottom margin, Name: 0.5rem bottom margin, Tags: 1rem top margin with 0.5rem gap between"
+        },
+        "projectCard": {
+          "structure": "Progress indicator (top-left) → Title (heading1) → Description (body, truncated) → Team avatars (bottom) → Menu icon (top-right)",
+          "spacing": "Progress: absolute positioned, Title: 1rem top margin, Description: 0.75rem top margin, Avatars: 1rem top margin"
+        },
+        "notificationCard": {
+          "structure": "Header (title + badge) → Notification list → Action buttons (bottom)",
+          "spacing": "Header: 1rem bottom margin, Notifications: no gap (bordered), Actions: 1rem top margin with gap"
+        }
+      },
+      "informationArchitecture": {
+        "hierarchy": "Most important information (names, titles) at top, supporting information (descriptions, metadata) below, actions at bottom",
+        "grouping": "Related information grouped together with consistent spacing",
+        "alignment": "Left-aligned text for readability, centered for avatars and circular elements"
+      }
+    },
+    
+    "accessibility": {
+      "contrast": {
+        "minimum": "4.5:1 for normal text, 3:1 for large text",
+        "description": "Ensure all text meets WCAG AA contrast requirements"
+      },
+      "touchTargets": {
+        "minimumSize": "44x44px",
+        "description": "All interactive elements should be at least 44x44 pixels for comfortable touch interaction"
+      },
+      "focus": {
+        "visible": "All interactive elements must have visible focus states",
+        "style": "2px solid #DC2626 with 2px offset"
+      }
+    },
+    
+    "implementation": {
+      "guidelines": {
+        "useTailwind": "Prefer Tailwind CSS utility classes for styling. Extend tailwind.config.js with custom colors and spacing from this design system.",
+        "componentStructure": "Create reusable components for each UI element (Card, Button, Avatar, etc.) that follow these specifications.",
+        "responsiveDesign": "All components should be mobile-first and responsive using the grid breakpoints defined above.",
+        "consistency": "Always use the spacing scale, color palette, and typography scale defined here. Avoid arbitrary values.",
+        "stateManagement": "Ensure all interactive elements have hover, active, focus, and disabled states as specified."
+      },
+      "tailwindMapping": {
+        "colors": {
+          "primary-bg": "bg-[#1F2937]",
+          "primary-accent": "bg-[#DC2626]",
+          "success": "bg-[#10B981]",
+          "gray-light": "bg-[#E5E7EB]",
+          "gray-medium": "text-[#9CA3AF]",
+          "gray-dark": "text-[#4B5563]"
+        },
+        "spacing": "Use Tailwind's spacing scale (p-4 = 1rem, p-6 = 1.5rem, etc.)",
+        "borderRadius": "rounded-lg (0.5rem), rounded-xl (0.75rem), rounded-full (50%)"
+      }
+    }
+  }
+}
+
