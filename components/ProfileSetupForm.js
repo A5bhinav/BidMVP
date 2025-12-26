@@ -162,7 +162,7 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
           onChange={(e) => handleChange('year', e.target.value)}
           required
           className={`w-full px-4 py-3 rounded-md border transition-all ${
-            errors.year ? 'border-error focus:border-error focus:ring-error' : 'border-gray-light focus:border-primary-accent focus:ring-primary-accent'
+            errors.year ? 'border-error focus:border-error focus:ring-error' : 'border-gray-border focus:border-primary-ui focus:ring-primary-ui'
           } focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-base`}
         >
           <option value="">Select year</option>
@@ -191,7 +191,7 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
           onChange={(e) => handleChange('gender', e.target.value)}
           required
           className={`w-full px-4 py-3 rounded-md border transition-all ${
-            errors.gender ? 'border-error focus:border-error focus:ring-error' : 'border-gray-light focus:border-primary-accent focus:ring-primary-accent'
+            errors.gender ? 'border-error focus:border-error focus:ring-error' : 'border-gray-border focus:border-primary-ui focus:ring-primary-ui'
           } focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-base`}
         >
           <option value="">Select gender</option>
@@ -214,7 +214,7 @@ export default function ProfileSetupForm({ onSubmit, initialData = {}, loading: 
       />
 
       {/* Social Links Section */}
-      <div className="space-y-4 pt-4 border-t-2 border-gray-light">
+      <div className="space-y-4 pt-4 border-t-2 border-gray-border">
         <h3 className="text-heading2 text-neutral-black">Social Links (Optional)</h3>
         
         {/* Instagram */}

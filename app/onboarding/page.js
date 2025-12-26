@@ -97,9 +97,9 @@ export default function OnboardingPage() {
   // Show loading state while checking auth or profile
   if (authLoading || checking) {
     return (
-      <main className="h-screen w-screen bg-primary-bg flex items-center justify-center">
+      <main className="h-screen w-screen bg-white flex items-center justify-center">
         <Card className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary-accent border-t-transparent mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary-ui border-t-transparent mx-auto mb-4"></div>
           <p className="text-bodySmall text-gray-medium">Checking your profile...</p>
         </Card>
       </main>
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
   // If profile is complete, show success message (will redirect)
   if (profileComplete) {
     return (
-      <main className="h-screen w-screen bg-primary-bg flex items-center justify-center">
+      <main className="h-screen w-screen bg-white flex items-center justify-center">
         <Card className="text-center">
           <div className="w-16 h-16 bg-success rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
@@ -140,7 +140,7 @@ export default function OnboardingPage() {
 
   // Show profile setup form
   return (
-    <main className="min-h-screen w-screen bg-primary-bg">
+    <main className="min-h-screen w-screen bg-white">
       <div className="max-w-md mx-auto px-6 py-12">
         <Card>
           <div className="mb-8">
