@@ -8,6 +8,8 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import AuthModal from '@/components/AuthModal'
+import Button from '@/components/ui/Button'
+import Card from '@/components/ui/Card'
 
 export default function Home() {
   // Local state to control the auth modal
@@ -34,42 +36,47 @@ export default function Home() {
   }
 
   return (
-    <main className="h-screen w-screen bg-white flex flex-col">
+    <main className="h-screen w-screen bg-primary-bg flex flex-col">
       {/* Center area - shows welcome message if logged in */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center px-6">
         {user && (
-          <div className="text-center">
-            <p className="text-lg font-semibold mb-2">Welcome!</p>
-            <p className="text-gray-600 mb-4">{user.email}</p>
-            <button
+          <Card className="text-center max-w-md w-full">
+            <p className="text-heading1 text-neutral-black mb-2">Welcome!</p>
+            <p className="text-bodySmall text-gray-dark mb-6">{user.email}</p>
+            <Button
               onClick={handleSignOut}
-              className="bg-black text-white px-6 py-3 font-semibold hover:bg-gray-900 active:bg-gray-800 transition-all"
+              variant="secondary"
+              size="large"
+              className="w-full"
             >
               Sign Out
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
       
       {/* Bottom buttons - only visible when not logged in */}
-      {/* Two side-by-side buttons: white with border (login) and black (signup) */}
       {!user && (
-        <div className="w-full px-8 pb-10 safe-area-bottom">
+        <div className="w-full px-6 pb-10 safe-area-bottom">
           <div className="flex gap-4">
-            {/* Log In button - white background with black border */}
-            <button
+            {/* Log In button - secondary variant */}
+            <Button
               onClick={openLoginModal}
-              className="flex-1 bg-white text-black py-4 border-2 border-black font-semibold text-base hover:bg-gray-50 active:bg-gray-100 transition-all"
+              variant="secondary"
+              size="large"
+              className="flex-1"
             >
               Log In
-            </button>
-            {/* Sign Up button - black background */}
-            <button
+            </Button>
+            {/* Sign Up button - primary variant */}
+            <Button
               onClick={openSignupModal}
-              className="flex-1 bg-black text-white py-4 border-2 border-black font-semibold text-base hover:bg-gray-900 active:bg-gray-800 transition-all"
+              variant="primary"
+              size="large"
+              className="flex-1"
             >
               Sign Up
-            </button>
+            </Button>
           </div>
         </div>
       )}

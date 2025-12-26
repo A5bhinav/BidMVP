@@ -12,6 +12,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import PhoneVerificationModal from './PhoneVerificationModal'
 import ProfileSetupForm from './ProfileSetupForm'
 import { mockCreateUserProfile } from '@/lib/mocks/userFunctions'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 
 export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
   // Local state for form inputs and UI feedback
@@ -134,14 +137,14 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6"
         onClick={onClose}
       >
-        <div
-          className="bg-white w-full max-w-md p-8 relative max-h-[90vh] overflow-y-auto"
+        <Card
+          className="w-full max-w-md relative max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center"
+            className="absolute top-4 right-4 text-gray-medium hover:text-neutral-black transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center"
             aria-label="Close"
           >
             ×
@@ -150,27 +153,27 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           {/* Progress indicator */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-600">Step 3 of 3</span>
-              <span className="text-sm font-semibold text-black">Profile Setup</span>
+              <span className="text-bodySmall font-semibold text-gray-medium">Step 3 of 3</span>
+              <span className="text-bodySmall font-semibold text-neutral-black">Profile Setup</span>
             </div>
-            <div className="w-full bg-gray-200 h-2 rounded-full">
-              <div className="bg-black h-2 rounded-full" style={{ width: '100%' }}></div>
+            <div className="w-full bg-gray-light h-2 rounded-full">
+              <div className="bg-primary-accent h-2 rounded-full transition-all" style={{ width: '100%' }}></div>
             </div>
           </div>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold mb-6">Complete Your Profile</h2>
+          <h2 className="text-heading1 text-neutral-black mb-6">Complete Your Profile</h2>
 
           {/* Success message */}
           {success && (
-            <div className="mb-4 p-4 bg-green-50 border-2 border-green-500 text-green-700">
+            <div className="mb-4 p-4 bg-green-50 border-2 border-success text-success rounded-md">
               Profile created successfully! Redirecting...
             </div>
           )}
 
           {/* Error message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border-2 border-red-500 text-red-700">
+            <div className="mb-4 p-4 bg-red-50 border-2 border-error text-error rounded-md">
               {error}
             </div>
           )}
@@ -180,7 +183,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
             onSubmit={handleProfileSubmit}
             loading={profileLoading}
           />
-        </div>
+        </Card>
       </div>
     )
   }
@@ -192,14 +195,14 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
         className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6"
         onClick={onClose}
       >
-        <div
-          className="bg-white w-full max-w-md p-8 relative"
+        <Card
+          className="w-full max-w-md relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center"
+            className="absolute top-4 right-4 text-gray-medium hover:text-neutral-black transition-colors text-2xl leading-none w-8 h-8 flex items-center justify-center"
             aria-label="Close"
           >
             ×
@@ -209,16 +212,16 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           {!isLogin && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-600">
+                <span className="text-bodySmall font-semibold text-gray-medium">
                   {signupStep === 'email' ? 'Step 1 of 3' : 'Step 2 of 3'}
                 </span>
-                <span className="text-sm font-semibold text-black">
+                <span className="text-bodySmall font-semibold text-neutral-black">
                   {signupStep === 'email' ? 'Create Account' : 'Verify Phone'}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 h-2 rounded-full">
+              <div className="w-full bg-gray-light h-2 rounded-full">
                 <div 
-                  className="bg-black h-2 rounded-full transition-all" 
+                  className="bg-primary-accent h-2 rounded-full transition-all" 
                   style={{ width: signupStep === 'email' ? '33%' : '66%' }}
                 ></div>
               </div>
@@ -226,20 +229,20 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           )}
 
           {/* Title */}
-          <h2 className="text-2xl font-bold mb-6">
+          <h2 className="text-heading1 text-neutral-black mb-6">
             {isLogin ? 'Log In' : 'Sign Up'}
           </h2>
 
           {/* Success message for signup */}
           {success && (
-            <div className="mb-4 p-4 bg-green-50 border-2 border-green-500 text-green-700">
+            <div className="mb-4 p-4 bg-green-50 border-2 border-success text-success rounded-md">
               Check your email to confirm your account!
             </div>
           )}
 
           {/* Error message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border-2 border-red-500 text-red-700">
+            <div className="mb-4 p-4 bg-red-50 border-2 border-error text-error rounded-md">
               {error}
             </div>
           )}
@@ -249,17 +252,16 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-semibold mb-2"
+                className="block text-bodySmall font-semibold mb-2 text-neutral-black"
               >
                 Email
               </label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
                 placeholder={isLogin ? "you@example.com" : "you@school.edu"}
               />
             </div>
@@ -267,31 +269,32 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-semibold mb-2"
+                className="block text-bodySmall font-semibold mb-2 text-neutral-black"
               >
                 Password
               </label>
-              <input
+              <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 border-2 border-black focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
                 placeholder="••••••••"
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-4 font-semibold text-base hover:bg-gray-900 active:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="large"
+              className="w-full"
             >
               {loading ? 'Loading...' : isLogin ? 'Log In' : 'Continue'}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
 
       {/* Phone verification modal */}
