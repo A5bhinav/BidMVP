@@ -28,7 +28,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
   const [profileLoading, setProfileLoading] = useState(false)
   
   // Get authentication functions from our auth context
-  const { signIn, signUp, user } = useAuth()
+  const { signIn, signUp, user, resendConfirmationEmail } = useAuth()
 
   // Determine if we're in login or signup mode
   const isLogin = mode === 'login'
@@ -64,17 +64,33 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
 
     try {
       // Call appropriate auth function based on mode
-      const { error } = isLogin
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthModal.js:66',message:'Before auth call',data:{isLogin,mode,email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      
+      const result = isLogin
         ? await signIn(email, password)
         : await signUp(email, password)
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3bf1bc05-78e8-4bdd-bb3f-5c49e2efc81a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthModal.js:73',message:'After auth call',data:{hasError:!!result.error,errorMessage:result.error?.message,errorStatus:result.error?.status,hasData:!!result.data,userEmail:result.data?.user?.email,userConfirmed:result.data?.user?.email_confirmed_at,userID:result.data?.user?.id,fullResult:JSON.stringify(result)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
 
-      if (error) throw error
+      if (result.error) throw result.error
 
       // Handle success differently for login vs signup
       if (!isLogin) {
-        // Signup: Move to phone verification step
-        setSignupStep('phone')
-        setPhoneModalOpen(true)
+        // Signup: Check if email confirmation is required
+        // If session is null, email confirmation is required
+        if (!result.data?.session) {
+          // Email confirmation required - show success message
+          setSuccess(true)
+          // Don't proceed to profile setup until email is confirmed
+          // User needs to click confirmation link in email first
+        } else {
+          // Email already confirmed or confirmation disabled - proceed to profile
+          setSignupStep('profile')
+        }
       } else {
         // Login: Close modal immediately (user is now authenticated)
         onClose()
@@ -111,12 +127,6 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
       if (createError) {
         setError(createError.message || 'Failed to create profile')
         return
-      }
-
-      // If phone was verified, update it separately
-      if (phone) {
-        // Phone will be saved during profile creation if included in profileData
-        // Or we can update it separately if needed
       }
       
       // Profile created successfully
@@ -160,7 +170,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           {/* Progress indicator */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-600">Step 3 of 3</span>
+              <span className="text-sm font-semibold text-gray-600">Step 2 of 2</span>
               <span className="text-sm font-semibold text-black">Profile Setup</span>
             </div>
             <div className="w-full bg-gray-200 h-2 rounded-full">
@@ -221,16 +231,16 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-gray-600">
-                  {signupStep === 'email' ? 'Step 1 of 3' : 'Step 2 of 3'}
+                  {signupStep === 'email' ? 'Step 1 of 2' : 'Step 2 of 2'}
                 </span>
                 <span className="text-sm font-semibold text-black">
-                  {signupStep === 'email' ? 'Create Account' : 'Verify Phone'}
+                  {signupStep === 'email' ? 'Create Account' : 'Profile Setup'}
                 </span>
               </div>
               <div className="w-full bg-gray-200 h-2 rounded-full">
                 <div 
                   className="bg-black h-2 rounded-full transition-all" 
-                  style={{ width: signupStep === 'email' ? '33%' : '66%' }}
+                  style={{ width: signupStep === 'email' ? '50%' : '100%' }}
                 ></div>
               </div>
             </div>
@@ -242,9 +252,25 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           </h2>
 
           {/* Success message for signup */}
-          {success && (
+          {success && !isLogin && (
             <div className="mb-4 p-4 bg-green-50 border-2 border-green-500 text-green-700">
-              Check your email to confirm your account!
+              <p className="mb-2">Check your email to confirm your account!</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  setError(null)
+                  const { error } = await resendConfirmationEmail(email)
+                  if (error) {
+                    setError(error.message || 'Failed to resend email')
+                  } else {
+                    setSuccess(true)
+                    setError(null)
+                  }
+                }}
+                className="text-sm underline hover:no-underline"
+              >
+                Resend confirmation email
+              </button>
             </div>
           )}
 
@@ -305,8 +331,9 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
         </div>
       </div>
 
-      {/* Phone verification modal */}
-      {!isLogin && (
+      {/* Phone verification modal - DISABLED for MVP */}
+      {/* Uncomment below to re-enable phone verification when SMS provider is configured */}
+      {/* {!isLogin && (
         <PhoneVerificationModal
           isOpen={phoneModalOpen}
           onClose={() => {
@@ -316,7 +343,7 @@ export default function AuthModal({ isOpen, onClose, mode = 'login' }) {
           onVerified={handlePhoneVerified}
           initialPhone={phone}
         />
-      )}
+      )} */}
     </>
   )
 }
