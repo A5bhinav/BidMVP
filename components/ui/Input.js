@@ -7,7 +7,9 @@
 
 'use client'
 
-export default function Input({ error, className = '', ...props }) {
+import { forwardRef } from 'react'
+
+const Input = forwardRef(function Input({ error, className = '', ...props }, ref) {
   const baseClasses = 'rounded-md border px-4 py-3 text-base transition-all w-full bg-white'
   
   const stateClasses = error
@@ -24,9 +26,12 @@ export default function Input({ error, className = '', ...props }) {
   
   return (
     <input
+      ref={ref}
       className={combinedClasses}
       {...props}
     />
   )
-}
+})
+
+export default Input
 

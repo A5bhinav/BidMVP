@@ -143,3 +143,23 @@ export async function searchSchoolsAction(query, limit = 20) {
   return await searchSchools(query, limit)
 }
 
+/**
+ * Link user to a specific school by ID (Server Action wrapper)
+ * Used for manual school selection
+ * @param {string} userId - User ID
+ * @param {string} schoolId - School ID
+ * @returns {Promise<{data: {success: boolean, user: object}|null, error: object|null}>}
+ */
+export async function linkUserToSchoolAction(userId, schoolId) {
+  return await linkUserToSchool(userId, schoolId)
+}
+
+/**
+ * Get school by domain (Server Action wrapper)
+ * @param {string} domain - Email domain (e.g., "stanford.edu")
+ * @returns {Promise<{data: object|null, error: object|null}>}
+ */
+export async function getSchoolByDomainAction(domain) {
+  return await getSchoolByDomain(domain)
+}
+
