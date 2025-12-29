@@ -105,9 +105,9 @@ export default function OnboardingPage() {
       // Profile created successfully
       setProfileComplete(true)
       
-      // Get returnTo parameter from URL to redirect back to original page
+      // Get returnTo parameter from URL to pass to campus selection
       const searchParams = new URLSearchParams(window.location.search)
-      const returnTo = searchParams.get('returnTo') || '/'
+      const returnTo = searchParams.get('returnTo') || '/welcome'
       
       // Clear returnTo from user metadata after successful profile creation
       // This prevents it from being used again if user verifies email multiple times
@@ -122,10 +122,11 @@ export default function OnboardingPage() {
         console.error('Failed to clear returnTo metadata:', metadataError)
       }
       
-      // Redirect to original page (or home) after brief delay
+      // Redirect to campus selection page after profile creation
+      // Pass returnTo as URL parameter so campus page can redirect after linking
       setTimeout(() => {
-        router.push(returnTo)
-      }, 1500)
+        router.push(`/onboarding/campus?returnTo=${encodeURIComponent(returnTo)}`)
+      }, 500)
     } catch (err) {
       setError(err.message || 'Failed to create profile')
     } finally {
