@@ -18,12 +18,16 @@ import Card from '@/components/ui/Card'
 export default function CampusSelector({ 
   detectedCampus, 
   onSelect, 
-  onConfirm, 
+  onConfirm,
+  onNotCorrect,
+  showSearch: externalShowSearch,
   loading = false, 
   error = null,
   onSearch 
 }) {
-  const [showSearch, setShowSearch] = useState(!detectedCampus)
+  // Use external showSearch prop if provided, otherwise default to !detectedCampus
+  const [internalShowSearch, setInternalShowSearch] = useState(!detectedCampus)
+  const showSearch = externalShowSearch !== undefined ? externalShowSearch : internalShowSearch
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
@@ -84,8 +88,15 @@ export default function CampusSelector({
   }
 
   const handleNotCorrect = () => {
-    setShowSearch(true)
+    if (externalShowSearch === undefined) {
+      // Only update internal state if not controlled externally
+      setInternalShowSearch(true)
+    }
     setSelectedSchool(null)
+    // Notify parent component that user is in manual search mode
+    if (onNotCorrect) {
+      onNotCorrect()
+    }
   }
 
   const handleSchoolClick = (school) => {

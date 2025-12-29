@@ -26,8 +26,9 @@ body {
 }
 
 body {
-  /* Prevent scrolling - we want a fixed mobile app experience */
-  overflow: hidden;
+  /* Allow scrolling - pages that need fixed height can set it individually */
+  overflow-y: auto;
+  overflow-x: hidden;
   /* Design system: White background for light theme (default) */
   background: #FFFFFF;
   color: #000000;

@@ -10,6 +10,8 @@ Run these migrations in order in your Supabase SQL Editor:
 2. **002_missing_tables.sql** - Creates new tables needed for MVP
 3. **003_rls_policies.sql** - Sets up Row Level Security policies
 4. **004_functions.sql** - Creates database functions and triggers
+5. **009_create_school_table.sql** - Creates school table for campus detection
+6. **010_add_test_schools.sql** - Adds test schools for development/testing (optional)
 
 ## How to Run
 
@@ -50,6 +52,17 @@ Run these migrations in order in your Supabase SQL Editor:
 - Creates `update_safety_score_and_tier()` function
 - Creates triggers to auto-update safety scores
 - Creates helper functions for event analytics
+
+### 009_create_school_table.sql
+- Creates `school` table for campus detection
+- Links schools to email domains
+- Sets up RLS policies for school table
+- Backfills existing user school data
+
+### 010_add_test_schools.sql
+- Adds 30 common universities for testing
+- Safe to run multiple times (skips existing schools)
+- Useful for testing the campus search feature
 
 ## Safety Notes
 

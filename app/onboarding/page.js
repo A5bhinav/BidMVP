@@ -22,6 +22,9 @@ export default function OnboardingPage() {
 
   // Check profile completion on mount
   useEffect(() => {
+    let mounted = true
+    let timeoutId = null
+
     const verifyProfileStatus = async () => {
       if (authLoading) return // Wait for auth to load
 
@@ -34,8 +37,23 @@ export default function OnboardingPage() {
       setChecking(true)
       setError(null)
 
+      // Set timeout to prevent infinite loading (5 seconds max)
+      timeoutId = setTimeout(() => {
+        if (mounted) {
+          console.warn('Profile check timed out, setting checking to false')
+          setChecking(false)
+        }
+      }, 5000)
+
       try {
         const { data, error: checkError } = await checkProfile(user.id)
+        
+        if (!mounted) return
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
         
         if (checkError) {
           setError(checkError.message || 'Failed to check profile status')
@@ -52,17 +70,40 @@ export default function OnboardingPage() {
           
           // Redirect to original page (or home) after brief delay
           setTimeout(() => {
-            router.push(returnTo)
+            if (mounted) {
+              router.push(returnTo)
+            }
           }, 1000)
         }
       } catch (err) {
+        if (!mounted) return
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        
         setError(err.message || 'Failed to check profile status')
       } finally {
-        setChecking(false)
+        if (mounted && timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        if (mounted) {
+          setChecking(false)
+        }
       }
     }
 
     verifyProfileStatus()
+
+    // Cleanup
+    return () => {
+      mounted = false
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
   }, [user, authLoading, router])
 
   // Handle profile submission

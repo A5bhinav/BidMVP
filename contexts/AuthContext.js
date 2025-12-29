@@ -31,24 +31,73 @@ export function AuthProvider({ children }) {
   const supabase = createClient() // Create Supabase client for browser
 
   useEffect(() => {
+    let mounted = true
+    let timeoutId = null
+
+    // Set up a timeout to prevent infinite loading (10 seconds max)
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.warn('Auth session check timed out, setting loading to false')
+        setLoading(false)
+      }
+    }, 10000)
+
     // On mount: Check if user already has an active session
     // This happens when user refreshes page or returns to app
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (!mounted) return
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        
+        if (error) {
+          console.error('Error getting session:', error)
+        }
+        
+        setUser(session?.user ?? null)
+        setLoading(false)
+      })
+      .catch((error) => {
+        if (!mounted) return
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+        
+        console.error('Failed to get session:', error)
+        // Still set loading to false so app doesn't get stuck
+        setUser(null)
+        setLoading(false)
+      })
 
     // Set up listener for auth state changes
     // Fires when user logs in, logs out, token refreshes, etc.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
-    // Cleanup: unsubscribe from listener when component unmounts
-    return () => subscription.unsubscribe()
+    // Cleanup: unsubscribe from listener and clear timeout when component unmounts
+    return () => {
+      mounted = false
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      subscription.unsubscribe()
+    }
   }, [supabase.auth])
 
   // Create new user account
