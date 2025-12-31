@@ -23,13 +23,17 @@ export default function FraternityCard({
     return null
   }
 
-  const typeLabels = {
-    'Fraternity': 'Fraternity',
-    'Sorority': 'Sorority',
-    'Other': 'Other'
+  // Backend returns lowercase types, map to capitalized labels
+  const getTypeLabel = (type) => {
+    const typeMap = {
+      'fraternity': 'Fraternity',
+      'sorority': 'Sorority',
+      'other': 'Other'
+    }
+    return typeMap[type?.toLowerCase()] || type || 'Other'
   }
 
-  const typeLabel = typeLabels[fraternity.type] || fraternity.type || 'Other'
+  const typeLabel = getTypeLabel(fraternity.type)
 
   // Compact variant - minimal info
   if (variant === 'compact') {
@@ -40,9 +44,9 @@ export default function FraternityCard({
         onClick={onClick}
       >
         <div className="flex items-center gap-3">
-          {fraternity.photo && (
+          {fraternity.photo_url && (
             <Avatar 
-              src={fraternity.photo} 
+              src={fraternity.photo_url} 
               alt={fraternity.name}
               size="small"
             />
@@ -74,9 +78,9 @@ export default function FraternityCard({
         <div className="space-y-4">
           {/* Header with photo and name */}
           <div className="flex items-start gap-4">
-            {fraternity.photo && (
+            {fraternity.photo_url && (
               <Avatar 
-                src={fraternity.photo} 
+                src={fraternity.photo_url} 
                 alt={fraternity.name}
                 size="large"
               />
@@ -91,8 +95,8 @@ export default function FraternityCard({
               {showMemberCount && (
                 <p className="text-bodySmall text-gray-medium">
                   {fraternity.quality_member_count || 0} quality member{(fraternity.quality_member_count || 0) !== 1 ? 's' : ''}
-                  {fraternity.total_member_count > (fraternity.quality_member_count || 0) && (
-                    <span> ({fraternity.total_member_count} total)</span>
+                  {fraternity.member_count > (fraternity.quality_member_count || 0) && (
+                    <span> ({fraternity.member_count} total)</span>
                   )}
                 </p>
               )}
@@ -123,9 +127,9 @@ export default function FraternityCard({
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-start gap-3">
-          {fraternity.photo && (
+          {fraternity.photo_url && (
             <Avatar 
-              src={fraternity.photo} 
+              src={fraternity.photo_url} 
               alt={fraternity.name}
               size="medium"
             />
@@ -147,8 +151,8 @@ export default function FraternityCard({
         {showMemberCount && (
           <p className="text-bodySmall text-gray-medium">
             {fraternity.quality_member_count || 0} quality member{(fraternity.quality_member_count || 0) !== 1 ? 's' : ''}
-            {fraternity.total_member_count > (fraternity.quality_member_count || 0) && (
-              <span> ({fraternity.total_member_count} total)</span>
+            {fraternity.member_count > (fraternity.quality_member_count || 0) && (
+              <span> ({fraternity.member_count} total)</span>
             )}
           </p>
         )}

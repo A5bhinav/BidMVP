@@ -5,7 +5,7 @@
 'use server'
 
 import { uploadProfilePhoto as uploadPhoto } from '@/lib/storage/upload'
-import { checkProfileComplete, createUserProfile, updateUserProfile, getUserProfile } from '@/lib/supabase/users'
+import { checkProfileComplete, createUserProfile, updateUserProfile, getUserProfile, searchUserByEmail } from '@/lib/supabase/users'
 import { getSchoolByDomain, createSchool, linkUserToSchool, getUserSchool, searchSchools } from '@/lib/supabase/schools'
 import { detectCampusFromEmail, autoLinkUser } from '@/lib/campus'
 import { createClient } from '@/lib/supabase/server'
@@ -161,5 +161,14 @@ export async function linkUserToSchoolAction(userId, schoolId) {
  */
 export async function getSchoolByDomainAction(domain) {
   return await getSchoolByDomain(domain)
+}
+
+/**
+ * Search user by email (Server Action wrapper)
+ * @param {string} email - Email address
+ * @returns {Promise<{data: object|null, error: object|null}>}
+ */
+export async function searchUserByEmailAction(email) {
+  return await searchUserByEmail(email)
 }
 

@@ -16,7 +16,7 @@ export default function VerificationStatus({ fraternity, variant = 'compact' }) 
   // Extract verification data
   const emailVerified = fraternity.email_verified || false
   const qualityMemberCount = fraternity.quality_member_count || 0
-  const totalMemberCount = fraternity.total_member_count || 0
+  const totalMemberCount = fraternity.member_count || 0
   const hasVerificationEmail = !!fraternity.verification_email
   const verified = fraternity.verified || false
 

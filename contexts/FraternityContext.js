@@ -47,7 +47,7 @@ export function FraternityProvider({ children }) {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await getUserFraternitiesAction(user.id)
+      const { data, error: fetchError } = await getUserFraternitiesAction()
       
       if (fetchError) {
         setError(fetchError.message || 'Failed to fetch fraternities')

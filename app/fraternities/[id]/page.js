@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getFraternityAction } from '@/app/actions/fraternity'
+import { getFraternityAction, checkIsAdminAction, canCreateEventsAction } from '@/app/actions/fraternity'
 import VerificationStatus from '@/components/VerificationStatus'
 import ReportFraternityModal from '@/components/ReportFraternityModal'
 import Card from '@/components/ui/Card'
@@ -22,6 +22,10 @@ export default function FraternityDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [canCreateEvents, setCanCreateEvents] = useState(null)
+  const [adminLoading, setAdminLoading] = useState(true)
+  const [eventsLoading, setEventsLoading] = useState(true)
 
   const fraternityId = params.id
 
@@ -62,6 +66,39 @@ export default function FraternityDashboardPage() {
     fetchFraternity()
   }, [fraternityId, user?.id, authLoading, router])
 
+  // Fetch admin status and event creation permission
+  useEffect(() => {
+    const fetchAdminAndEvents = async () => {
+      if (authLoading || !user?.id || !fraternityId || loading) {
+        return
+      }
+
+      setAdminLoading(true)
+      setEventsLoading(true)
+
+      try {
+        // Check admin status
+        const { data: adminData, error: adminError } = await checkIsAdminAction(fraternityId)
+        if (!adminError && adminData) {
+          setIsAdmin(adminData.isAdmin || false)
+        }
+
+        // Check event creation permission
+        const { data: eventsData, error: eventsError } = await canCreateEventsAction(fraternityId)
+        if (!eventsError && eventsData) {
+          setCanCreateEvents(eventsData)
+        }
+      } catch (err) {
+        console.error('Error fetching admin/events status:', err)
+      } finally {
+        setAdminLoading(false)
+        setEventsLoading(false)
+      }
+    }
+
+    fetchAdminAndEvents()
+  }, [fraternityId, user?.id, authLoading, loading])
+
   // Show loading state
   if (authLoading || loading) {
     return (
@@ -100,13 +137,17 @@ export default function FraternityDashboardPage() {
     )
   }
 
-  const typeLabels = {
-    'Fraternity': 'Fraternity',
-    'Sorority': 'Sorority',
-    'Other': 'Other'
+  // Backend returns lowercase types, map to capitalized labels
+  const getTypeLabel = (type) => {
+    const typeMap = {
+      'fraternity': 'Fraternity',
+      'sorority': 'Sorority',
+      'other': 'Other'
+    }
+    return typeMap[type?.toLowerCase()] || type || 'Other'
   }
 
-  const typeLabel = typeLabels[fraternity.type] || fraternity.type || 'Other'
+  const typeLabel = getTypeLabel(fraternity.type)
 
   return (
     <main className="min-h-screen w-screen bg-white">
@@ -115,9 +156,9 @@ export default function FraternityDashboardPage() {
           <div className="space-y-6">
             {/* Header with photo and name */}
             <div className="flex items-start gap-4">
-              {fraternity.photo && (
+              {fraternity.photo_url && (
                 <Avatar 
-                  src={fraternity.photo} 
+                  src={fraternity.photo_url} 
                   alt={fraternity.name}
                   size="large"
                 />
@@ -131,8 +172,8 @@ export default function FraternityDashboardPage() {
                 </Badge>
                 <p className="text-bodySmall text-gray-medium">
                   {fraternity.quality_member_count || 0} quality member{(fraternity.quality_member_count || 0) !== 1 ? 's' : ''}
-                  {fraternity.total_member_count > (fraternity.quality_member_count || 0) && (
-                    <span> ({fraternity.total_member_count} total)</span>
+                  {fraternity.member_count > (fraternity.quality_member_count || 0) && (
+                    <span> ({fraternity.member_count} total)</span>
                   )}
                 </p>
               </div>
@@ -169,6 +210,49 @@ export default function FraternityDashboardPage() {
                 Only members with verified emails and completed profiles count toward verification.
               </p>
             </div>
+
+            {/* Event Creation Status */}
+            {canCreateEvents && (
+              <div className={`p-4 rounded-md ${canCreateEvents.canCreate ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-lg">{canCreateEvents.canCreate ? '✓' : 'ⓘ'}</span>
+                  <div className="flex-1">
+                    <p className="text-bodySmall font-semibold text-neutral-black mb-1">
+                      {canCreateEvents.canCreate ? 'Ready to Create Events' : 'Event Creation Not Available'}
+                    </p>
+                    {canCreateEvents.reason && (
+                      <p className="text-bodySmall text-gray-dark">
+                        {canCreateEvents.reason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Actions */}
+            {isAdmin && !adminLoading && (
+              <div className="pt-4 border-t border-gray-border space-y-3">
+                <Button
+                  onClick={() => router.push(`/fraternities/${fraternityId}/members`)}
+                  variant="secondary"
+                  size="large"
+                  className="w-full"
+                >
+                  Manage Members
+                </Button>
+                {canCreateEvents?.canCreate && (
+                  <Button
+                    onClick={() => router.push(`/events/create?fraternityId=${fraternityId}`)}
+                    variant="primary"
+                    size="large"
+                    className="w-full"
+                  >
+                    Create Event
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Report Button */}
             <div className="pt-4 border-t border-gray-border">
