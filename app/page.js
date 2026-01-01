@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useFraternity } from '@/contexts/FraternityContext'
 import AuthModal from '@/components/AuthModal'
 import FraternityPrompt from '@/components/FraternityPrompt'
+import FraternityCard from '@/components/FraternityCard'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import { useRouter } from 'next/navigation'
@@ -21,9 +22,25 @@ export default function Home() {
   const [promptDismissed, setPromptDismissed] = useState(false)
   
   // Get current user from auth context (for potential future use)
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, signOut } = useAuth()
   const { userFraternities, loading: fraternityLoading } = useFraternity()
   const router = useRouter()
+
+  // Filter to admin fraternities only (with null checks)
+  // Don't calculate admin status until loading is complete to avoid race conditions
+  // IMPORTANT: Only calculate when both auth and fraternity loading are complete
+  const adminFraternities = (authLoading || fraternityLoading)
+    ? [] // Don't calculate while loading
+    : (userFraternities || [])
+        .filter(f => f && f.role === 'admin' && f.fraternity)
+        .map(f => f.fraternity) // Extract fraternity object for FraternityCard
+
+  // Only consider user an admin if BOTH loading states are complete and they have admin fraternities
+  // Also ensure userFraternities is actually loaded (not just empty array from initialization)
+  const isAdmin = !authLoading && !fraternityLoading && adminFraternities.length > 0
+  
+  // Track if we've determined the user's admin status (to prevent flash)
+  const hasDeterminedAdminStatus = !authLoading && !fraternityLoading
 
   // Check if prompt was dismissed in localStorage
   useEffect(() => {
@@ -56,10 +73,11 @@ export default function Home() {
   const showPrompt = user && 
                      !promptDismissed && 
                      !fraternityLoading && 
+                     !isAdmin && // Don't show prompt if user is admin
                      userFraternities.length === 0
   
   // Show loading state while checking auth
-  if (authLoading) {
+  if (authLoading || fraternityLoading) {
     return (
       <main className="h-screen w-screen bg-white flex items-center justify-center">
         <Card className="text-center">
@@ -92,34 +110,114 @@ export default function Home() {
         />
       )}
 
-      {/* Center area - empty for now, can add content later */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        {/* Add any welcome content or branding here if needed */}
+      {/* Center area - Dashboard Hub for admins, placeholder for others */}
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        {/* Only render content when loading is complete to prevent flashing */}
+        {user && hasDeterminedAdminStatus && isAdmin ? (
+          // Dashboard Hub Section
+          <div className="space-y-6 flex flex-col h-full">
+            {/* Header with Sign Out button */}
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-heading1 text-neutral-black">
+                My Fraternities
+              </h1>
+              <Button
+                onClick={async () => {
+                  await signOut()
+                  router.push('/')
+                }}
+                variant="text"
+                size="medium"
+                className="text-gray-medium hover:text-gray-dark"
+              >
+                Sign Out
+              </Button>
+            </div>
+
+            {/* Fraternity Cards List */}
+            <div className="flex-1">
+              {adminFraternities.length > 0 ? (
+                <div className="space-y-4">
+                  {adminFraternities.map((fraternity) => (
+                    <FraternityCard
+                      key={fraternity.id}
+                      fraternity={fraternity}
+                      onClick={() => router.push(`/fraternities/${fraternity.id}`)}
+                      showMemberCount={true}
+                      variant="default"
+                    />
+                  ))}
+                </div>
+              ) : (
+                // Empty State (edge case)
+                <Card>
+                  <p className="text-center text-bodySmall text-gray-medium py-8">
+                    No fraternities found. Create your first fraternity to get started.
+                  </p>
+                </Card>
+              )}
+            </div>
+
+            {/* Create New Fraternity Button - at bottom */}
+            <div className="pt-4">
+              <Button
+                onClick={() => router.push('/fraternities/create')}
+                variant="primary"
+                size="large"
+                className="w-full"
+              >
+                Create New Fraternity
+              </Button>
+            </div>
+          </div>
+        ) : user && hasDeterminedAdminStatus ? (
+          // Placeholder for logged-in non-admin users (only show when loading is complete)
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Card className="text-center max-w-md w-full">
+              <p className="text-bodySmall text-gray-medium mb-6">
+                Welcome! Events feed coming soon.
+              </p>
+              <Button
+                onClick={async () => {
+                  await signOut()
+                  router.push('/')
+                }}
+                variant="secondary"
+                size="large"
+                className="w-full"
+              >
+                Sign Out
+              </Button>
+            </Card>
+          </div>
+        ) : null}
       </div>
       
-      {/* Bottom buttons - always visible */}
-      <div className="w-full px-6 pb-10 safe-area-bottom">
-        <div className="flex gap-4">
-          {/* Log In button - secondary variant */}
-          <Button
-            onClick={openLoginModal}
-            variant="secondary"
-            size="large"
-            className="flex-1"
-          >
-            Log In
-          </Button>
-          {/* Sign Up button - primary variant */}
-          <Button
-            onClick={openSignupModal}
-            variant="primary"
-            size="large"
-            className="flex-1"
-          >
-            Sign Up
-          </Button>
+      {/* Bottom buttons - only show when not logged in */}
+      {!user && (
+        <div className="w-full px-6 pb-10 safe-area-bottom">
+          <div className="flex gap-4">
+            {/* Log In button - secondary variant */}
+            <Button
+              onClick={openLoginModal}
+              variant="secondary"
+              size="large"
+              className="flex-1"
+            >
+              Log In
+            </Button>
+            {/* Sign Up button - primary variant */}
+            <Button
+              onClick={openSignupModal}
+              variant="primary"
+              size="large"
+              className="flex-1"
+            >
+              Sign Up
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Reusable auth modal - switches between login and signup mode */}
       <AuthModal
