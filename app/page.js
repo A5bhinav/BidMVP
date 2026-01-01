@@ -111,7 +111,8 @@ export default function Home() {
       )}
 
       {/* Center area - Dashboard Hub for admins, placeholder for others */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      {/* Add bottom padding when nav is visible (3.5rem nav height + safe area) */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-[calc(3.5rem+max(0.5rem,env(safe-area-inset-bottom)))]">
         {/* Only render content when loading is complete to prevent flashing */}
         {user && hasDeterminedAdminStatus && isAdmin ? (
           // Dashboard Hub Section

@@ -163,6 +163,19 @@ export async function getFriendRequestsAction() {
 }
 
 /**
+ * Get sent friend requests only (Server Action wrapper)
+ * Extracts sent requests from getFriendRequests
+ * @returns {Promise<{data: Array|null, error: object|null}>}
+ */
+export async function getSentRequestsAction() {
+  const result = await getFriendRequestsAction()
+  if (result.error) {
+    return result
+  }
+  return { data: result.data?.sent || [], error: null }
+}
+
+/**
  * Get friendship status (Server Action wrapper)
  * @param {string} otherUserId - Other user ID to check status with
  * @returns {Promise<{data: {status: string, friendship: object|null}|null, error: object|null}>}
@@ -181,9 +194,10 @@ export async function getFriendshipStatusAction(otherUserId) {
 /**
  * Get people you might have met (Server Action wrapper)
  * @param {number} limit - Maximum number of suggestions (default: 20)
+ * @param {boolean} includeCrossSchool - Include users from other schools (default: true)
  * @returns {Promise<{data: Array|null, error: object|null}>}
  */
-export async function getPeopleYouMetAction(limit = 20) {
+export async function getPeopleYouMetAction(limit = 20, includeCrossSchool = true) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -191,6 +205,6 @@ export async function getPeopleYouMetAction(limit = 20) {
     return { data: null, error: { message: 'Not authenticated' } }
   }
   
-  return await getPeopleYouMet(user.id, limit)
+  return await getPeopleYouMet(user.id, limit, includeCrossSchool)
 }
 

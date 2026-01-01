@@ -39,26 +39,26 @@ export default function FriendList({ friends = [], onRemove, loading = false }) 
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {friends.map((friend) => (
         <Card
-          key={friend.id || friend.friendship_id}
+          key={friend?.id || friend?.friend?.id}
           variant="default"
           className="p-4 hover:shadow-lg transition-shadow"
         >
           <div className="flex flex-col items-center gap-3">
             {/* Avatar */}
             <Avatar
-              src={friend.profile_pic}
-              alt={friend.name}
+              src={friend?.profile_pic || friend?.friend?.profile_pic}
+              alt={friend?.name || friend?.friend?.name}
               size="lg"
             />
 
             {/* Name */}
             <div className="text-center w-full">
               <h3 className="font-semibold text-gray-dark truncate">
-                {friend.name}
+                {friend?.name || friend?.friend?.name}
               </h3>
-              {friend.year && (
+              {(friend?.year || friend?.friend?.year) && (
                 <p className="text-sm text-gray-medium">
-                  Year {friend.year}
+                  Year {friend?.year || friend?.friend?.year}
                 </p>
               )}
             </div>

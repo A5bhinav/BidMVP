@@ -31,14 +31,20 @@ WHERE is_checked_in = TRUE;
 -- This function bypasses RLS with SECURITY DEFINER for better performance
 -- Recommended approach for the getPeopleYouMet algorithm
 
-CREATE OR REPLACE FUNCTION get_people_you_met(p_user_id TEXT, p_limit INTEGER DEFAULT 20)
+CREATE OR REPLACE FUNCTION get_people_you_met(
+  p_user_id TEXT, 
+  p_limit INTEGER DEFAULT 20,
+  p_user_school_id TEXT DEFAULT NULL,
+  p_include_cross_school BOOLEAN DEFAULT TRUE
+)
 RETURNS TABLE (
   user_id TEXT,
   name TEXT,
   profile_pic TEXT,
   year INTEGER,
   shared_events_count BIGINT,
-  last_event_date TIMESTAMP
+  last_event_date TIMESTAMP,
+  is_same_school BOOLEAN
 ) 
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -52,7 +58,8 @@ BEGIN
     other_user.profile_pic,
     other_user.year,
     COUNT(DISTINCT shared_events.event_id)::BIGINT as shared_events_count,
-    MAX(shared_events.checked_in_at) as last_event_date
+    NULL::TIMESTAMP as last_event_date,
+    (other_user.school_id = p_user_school_id) as is_same_school
   FROM checkin user_checkins
   JOIN checkin other_checkins ON user_checkins.event_id = other_checkins.event_id
   JOIN "User" other_user ON other_checkins.user_id = other_user.id
@@ -69,8 +76,11 @@ BEGIN
       WHERE (friendship.user_id = p_user_id AND friendship.friend_id = other_user.id)
          OR (friendship.user_id = other_user.id AND friendship.friend_id = p_user_id)
     )
-  GROUP BY other_user.id, other_user.name, other_user.profile_pic, other_user.year
-  ORDER BY shared_events_count DESC, last_event_date DESC
+    -- Filter by school if p_include_cross_school is false
+    AND (p_include_cross_school = TRUE OR other_user.school_id = p_user_school_id OR p_user_school_id IS NULL)
+  GROUP BY other_user.id, other_user.name, other_user.profile_pic, other_user.year, other_user.school_id
+  -- Prioritize same-school users, then sort by shared events count
+  ORDER BY is_same_school DESC, shared_events_count DESC, last_event_date DESC
   LIMIT p_limit;
 END;
 $$;

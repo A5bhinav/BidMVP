@@ -35,30 +35,30 @@ function formatTimeAgo(timestamp) {
 }
 
 export default function FriendRequestCard({ request, onAccept, onDeny, loading = false }) {
-  if (!request || !request.requester) {
+  if (!request || !request.user) {
     return null
   }
 
-  const { requester, created_at } = request
+  const { user, created_at } = request
 
   return (
     <Card variant="default" className="p-4">
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <Avatar
-          src={requester.profile_pic}
-          alt={requester.name}
+          src={user.profile_pic}
+          alt={user.name}
           size="lg"
         />
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-dark truncate">
-            {requester.name}
+            {user.name}
           </h3>
-          {requester.year && (
+          {user.year && (
             <p className="text-sm text-gray-medium">
-              Year {requester.year}
+              Year {user.year}
             </p>
           )}
           <p className="text-xs text-gray-medium mt-1">

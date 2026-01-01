@@ -12,10 +12,10 @@ import {
   getSentRequestsAction,
   getPeopleYouMetAction,
   acceptFriendRequestAction,
-  denyFriendRequestAction,
+  declineFriendRequestAction,
   sendFriendRequestAction,
   removeFriendAction
-} from '@/app/actions/friendship'
+} from '@/app/actions/friends'
 import FriendList from '@/components/FriendList'
 import FriendRequestCard from '@/components/FriendRequestCard'
 import PeopleYouMet from '@/components/PeopleYouMet'
@@ -68,11 +68,12 @@ export default function FriendsPage() {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await getFriendsAction(user.id)
+      const { data, error: fetchError } = await getFriendsAction()
       if (fetchError) {
         setError(fetchError.message || 'Failed to load friends')
       } else {
-        setFriends(data || [])
+        // Backend returns [{friend: {...}, friendship: {...}}], extract friend objects
+        setFriends(data?.map(item => item.friend) || [])
       }
     } catch (err) {
       setError(err.message || 'Failed to load friends')
@@ -89,11 +90,12 @@ export default function FriendsPage() {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await getFriendRequestsAction(user.id)
+      const { data, error: fetchError } = await getFriendRequestsAction()
       if (fetchError) {
         setError(fetchError.message || 'Failed to load requests')
       } else {
-        setRequests(data || [])
+        // Backend returns {sent: [], received: []}, extract received
+        setRequests(data?.received || [])
       }
     } catch (err) {
       setError(err.message || 'Failed to load requests')
@@ -110,7 +112,7 @@ export default function FriendsPage() {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await getSentRequestsAction(user.id)
+      const { data, error: fetchError } = await getSentRequestsAction()
       if (fetchError) {
         setError(fetchError.message || 'Failed to load sent requests')
       } else {
@@ -124,6 +126,8 @@ export default function FriendsPage() {
   }
 
   // Fetch suggestions
+  // Default: includeCrossSchool = true (prioritizes same-school users but allows cross-school)
+  // To disable cross-school: getPeopleYouMetAction(20, false)
   const fetchSuggestions = async () => {
     if (!user?.id) return
 
@@ -131,11 +135,23 @@ export default function FriendsPage() {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await getPeopleYouMetAction(user.id)
+      // includeCrossSchool defaults to true - prioritizes same-school but allows cross-school
+      const { data, error: fetchError } = await getPeopleYouMetAction(20, true)
       if (fetchError) {
         setError(fetchError.message || 'Failed to load suggestions')
       } else {
-        setSuggestions(data || [])
+        // Backend returns [{user: {...}, sharedEvents: number, lastEventDate: string, isSameSchool: boolean}]
+        // Frontend expects suggestions with user properties at top level
+        const formatted = data?.map(item => ({
+          id: item.user.id,
+          name: item.user.name,
+          profile_pic: item.user.profile_pic,
+          year: item.user.year,
+          sharedEvents: item.sharedEvents,
+          lastEventDate: item.lastEventDate,
+          isSameSchool: item.isSameSchool || false
+        })) || []
+        setSuggestions(formatted)
       }
     } catch (err) {
       setError(err.message || 'Failed to load suggestions')
@@ -166,17 +182,15 @@ export default function FriendsPage() {
 
   // Handle accept request
   const handleAcceptRequest = async (request) => {
-    if (!user?.id || !request?.requester?.id) return
+    if (!user?.id || !request?.user?.id) return
 
     const actionKey = `accept-${request.id}`
     setActionLoading(prev => ({ ...prev, [actionKey]: true }))
     setError(null)
 
     try {
-      const { error: acceptError } = await acceptFriendRequestAction(
-        user.id,
-        request.requester.id
-      )
+      // Backend expects friendId (sender's ID)
+      const { error: acceptError } = await acceptFriendRequestAction(request.user.id)
 
       if (acceptError) {
         setError(acceptError.message || 'Failed to accept request')
@@ -194,26 +208,24 @@ export default function FriendsPage() {
 
   // Handle deny request
   const handleDenyRequest = async (request) => {
-    if (!user?.id || !request?.requester?.id) return
+    if (!user?.id || !request?.user?.id) return
 
     const actionKey = `deny-${request.id}`
     setActionLoading(prev => ({ ...prev, [actionKey]: true }))
     setError(null)
 
     try {
-      const { error: denyError } = await denyFriendRequestAction(
-        user.id,
-        request.requester.id
-      )
+      // Backend uses declineFriendRequestAction
+      const { error: denyError } = await declineFriendRequestAction(request.user.id)
 
       if (denyError) {
-        setError(denyError.message || 'Failed to deny request')
+        setError(denyError.message || 'Failed to decline request')
       } else {
         // Remove from requests
         setRequests(prev => prev.filter(r => r.id !== request.id))
       }
     } catch (err) {
-      setError(err.message || 'Failed to deny request')
+      setError(err.message || 'Failed to decline request')
     } finally {
       setActionLoading(prev => ({ ...prev, [actionKey]: false }))
     }
@@ -228,10 +240,8 @@ export default function FriendsPage() {
     setError(null)
 
     try {
-      const { error: sendError } = await sendFriendRequestAction(
-        user.id,
-        suggestion.id
-      )
+      // Backend doesn't need userId (gets from auth)
+      const { error: sendError } = await sendFriendRequestAction(suggestion.id)
 
       if (sendError) {
         setError(sendError.message || 'Failed to send request')
@@ -262,10 +272,8 @@ export default function FriendsPage() {
     setError(null)
 
     try {
-      const { error: removeError } = await removeFriendAction(
-        user.id,
-        friend.id
-      )
+      // Backend doesn't need userId (gets from auth)
+      const { error: removeError } = await removeFriendAction(friend.id)
 
       if (removeError) {
         setError(removeError.message || 'Failed to remove friend')
@@ -293,7 +301,7 @@ export default function FriendsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-bg p-4 md:p-6">
+    <div className="min-h-screen bg-gray-bg p-4 md:p-6 pb-[calc(3.5rem+max(0.5rem,env(safe-area-inset-bottom)))]">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -405,17 +413,17 @@ export default function FriendsPage() {
                   <Card key={request.id} variant="default" className="p-4">
                     <div className="flex items-center gap-4">
                       <Avatar
-                        src={request.recipient?.profile_pic}
-                        alt={request.recipient?.name}
+                        src={request.user?.profile_pic}
+                        alt={request.user?.name}
                         size="lg"
                       />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-dark truncate">
-                          {request.recipient?.name}
+                          {request.user?.name}
                         </h3>
-                        {request.recipient?.year && (
+                        {request.user?.year && (
                           <p className="text-sm text-gray-medium">
-                            Year {request.recipient.year}
+                            Year {request.user.year}
                           </p>
                         )}
                         <p className="text-xs text-gray-medium mt-1">

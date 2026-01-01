@@ -76,35 +76,35 @@ export default function PeopleYouMet({
   return (
     <div className="space-y-4">
       {suggestions.map((suggestion) => (
-        <Card key={suggestion.id} variant="default" className="p-4">
+        <Card key={suggestion.id || suggestion.user?.id} variant="default" className="p-4">
           <div className="flex items-center gap-4">
             {/* Avatar */}
             <Avatar
-              src={suggestion.profile_pic}
-              alt={suggestion.name}
+              src={suggestion.profile_pic || suggestion.user?.profile_pic}
+              alt={suggestion.name || suggestion.user?.name}
               size="lg"
             />
 
             {/* User Info */}
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-dark truncate">
-                {suggestion.name}
+                {suggestion.name || suggestion.user?.name}
               </h3>
-              {suggestion.year && (
+              {(suggestion.year || suggestion.user?.year) && (
                 <p className="text-sm text-gray-medium">
-                  Year {suggestion.year}
+                  Year {suggestion.year || suggestion.user?.year}
                 </p>
               )}
               
               {/* Event Context */}
-              {suggestion.event_name && (
+              {suggestion.sharedEvents !== undefined && (
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="tag" className="text-xs">
-                    Met at {suggestion.event_name}
+                    Attended {suggestion.sharedEvents} {suggestion.sharedEvents === 1 ? 'event' : 'events'} together
                   </Badge>
-                  {suggestion.met_at && (
+                  {suggestion.lastEventDate && (
                     <span className="text-xs text-gray-medium">
-                      {formatTimeAgo(suggestion.met_at)}
+                      Last event: {formatTimeAgo(suggestion.lastEventDate)}
                     </span>
                   )}
                 </div>
