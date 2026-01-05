@@ -8,7 +8,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getFraternityAction, checkIsAdminAction, canCreateEventsAction } from '@/app/actions/fraternity'
 import VerificationStatus from '@/components/VerificationStatus'
-import ReportFraternityModal from '@/components/ReportFraternityModal'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Avatar from '@/components/ui/Avatar'
@@ -21,7 +20,6 @@ export default function FraternityDashboardPage() {
   const [fraternity, setFraternity] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showReportModal, setShowReportModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [canCreateEvents, setCanCreateEvents] = useState(null)
   const [adminLoading, setAdminLoading] = useState(true)
@@ -252,54 +250,65 @@ export default function FraternityDashboardPage() {
               </div>
             )}
 
-            {/* Admin Actions */}
-            {isAdmin && !adminLoading && (
+            {/* Admin Actions - Always show section for admins */}
+            {!adminLoading && (
               <div className="pt-4 border-t border-gray-border space-y-3">
-                <Button
-                  onClick={() => router.push(`/fraternities/${fraternityId}/members`)}
-                  variant="secondary"
-                  size="large"
-                  className="w-full"
-                >
-                  Manage Members
-                </Button>
-                {canCreateEvents?.canCreate && (
-                  <Button
-                    onClick={() => router.push(`/events/create?fraternityId=${fraternityId}`)}
-                    variant="primary"
-                    size="large"
-                    className="w-full"
-                  >
-                    Create Event
-                  </Button>
+                <h2 className="text-heading3 text-neutral-black mb-3">
+                  Admin Actions
+                </h2>
+                {isAdmin ? (
+                  <>
+                    <Button
+                      onClick={() => router.push(`/fraternities/${fraternityId}/members`)}
+                      variant="secondary"
+                      size="large"
+                      className="w-full"
+                    >
+                      Manage Members
+                    </Button>
+                    {eventsLoading ? (
+                      <div className="p-3 bg-gray-light rounded-md">
+                        <p className="text-bodySmall text-gray-medium text-center">
+                          Checking event creation permissions...
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Button
+                          onClick={() => router.push(`/events/create?fraternityId=${fraternityId}`)}
+                          variant={canCreateEvents?.canCreate ? "primary" : "secondary"}
+                          size="large"
+                          className="w-full"
+                        >
+                          Create Event
+                        </Button>
+                        {canCreateEvents?.reason && !canCreateEvents?.canCreate && (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-caption text-gray-dark text-center font-medium">
+                              {canCreateEvents.reason}
+                            </p>
+                            <p className="text-caption text-gray-medium text-center mt-1">
+                              You can still click the button to see more details on the event creation page.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="p-3 bg-gray-light rounded-md">
+                    <p className="text-bodySmall text-gray-medium text-center">
+                      You must be an admin to access these actions
+                    </p>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Report Button */}
-            <div className="pt-4 border-t border-gray-border">
-              <Button
-                onClick={() => setShowReportModal(true)}
-                variant="text"
-                size="medium"
-                className="w-full text-error hover:text-error/80"
-              >
-                Report Fraternity
-              </Button>
-            </div>
           </div>
         </Card>
       </div>
 
-      {/* Report Modal */}
-      {showReportModal && (
-        <ReportFraternityModal
-          isOpen={showReportModal}
-          onClose={() => setShowReportModal(false)}
-          fraternityId={fraternityId}
-          fraternityName={fraternity.name}
-        />
-      )}
     </main>
   )
 }

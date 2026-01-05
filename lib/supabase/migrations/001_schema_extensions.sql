@@ -49,11 +49,22 @@ ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'public' CHECK (visibility IN (
 ALTER TABLE event 
 ADD COLUMN IF NOT EXISTS qr_code TEXT UNIQUE;
 
+-- Add location field (optional)
+ALTER TABLE event 
+ADD COLUMN IF NOT EXISTS location TEXT;
+
 -- Add index on event_type for filtering
 CREATE INDEX IF NOT EXISTS idx_event_type ON event(event_type);
 
 -- Add index on visibility for filtering
 CREATE INDEX IF NOT EXISTS idx_event_visibility ON event(visibility);
+
+-- Make capacity column nullable (not needed for event creation)
+ALTER TABLE event 
+ALTER COLUMN capacity DROP NOT NULL;
+
+-- Add comment explaining capacity is optional
+COMMENT ON COLUMN event.capacity IS 'Capacity is optional and not currently used in event creation';
 
 -- ============================================
 -- 3. Extend fraternity table

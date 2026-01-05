@@ -3,8 +3,8 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFraternity } from '@/contexts/FraternityContext'
 import { createEventAction } from '@/app/actions/events'
@@ -15,9 +15,11 @@ import FraternityRequiredModal from '@/components/FraternityRequiredModal'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { XMarkIcon as XIcon } from '@heroicons/react/24/outline'
+import { CheckIcon } from '@heroicons/react/24/outline'
 
-export default function CreateEventPage() {
+function CreateEventPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const { userFraternities, loading: fraternityLoading } = useFraternity()
   const [loading, setLoading] = useState(false)
@@ -27,6 +29,10 @@ export default function CreateEventPage() {
   const [illustrationUrl, setIllustrationUrl] = useState(null)
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [checkingVerification, setCheckingVerification] = useState(true)
+  const formRef = useRef(null)
+
+  // Get fraternityId from query parameter
+  const fraternityIdFromQuery = searchParams.get('fraternityId')
 
   // Check verification status for user's fraternities
   useEffect(() => {
@@ -44,6 +50,7 @@ export default function CreateEventPage() {
       setCheckingVerification(true)
 
       // Filter to admin fraternities only
+      // userFraternities structure: [{ fraternity: {...}, role: 'admin' }, ...]
       const adminFraternities = userFraternities.filter(frat => frat.role === 'admin')
 
       if (adminFraternities.length === 0) {
@@ -55,34 +62,62 @@ export default function CreateEventPage() {
       // Check verification status for each admin fraternity
       const verificationChecks = await Promise.all(
         adminFraternities.map(async (frat) => {
-          const { data } = await canCreateEventsAction(frat.id)
+          const fraternityId = frat.fraternity?.id || frat.id
+          const { data } = await canCreateEventsAction(fraternityId)
           return {
             ...frat,
-            canCreate: data?.canCreate || false
+            id: fraternityId,
+            name: frat.fraternity?.name || frat.name,
+            canCreate: data?.canCreate || false,
+            reason: data?.reason || null,
+            membersNeeded: data?.membersNeeded || 0,
+            qualityMemberCount: data?.qualityMemberCount || 0
           }
         })
       )
 
+      // If a specific fraternity was requested via query param, include it even if not verified
+      // This allows users to see the form and get a clear error message
       const verified = verificationChecks.filter(frat => frat.canCreate)
+      const requestedFrat = fraternityIdFromQuery 
+        ? verificationChecks.find(frat => frat.id === fraternityIdFromQuery)
+        : null
 
-      if (verified.length === 0) {
+      // If no verified fraternities and no requested fraternity, show modal
+      if (verified.length === 0 && !requestedFrat) {
         setCheckingVerification(false)
         setShowVerificationModal(true)
         return
       }
 
-      setVerifiedFraternities(verified)
+      // Include verified fraternities, and the requested one if it exists (even if not verified)
+      const fraternitiesToShow = verified.length > 0 
+        ? verified 
+        : requestedFrat 
+          ? [requestedFrat]
+          : []
 
-      // Auto-select if only one verified fraternity
-      if (verified.length === 1) {
-        setSelectedFratId(verified[0].id)
+      setVerifiedFraternities(fraternitiesToShow)
+
+      // Pre-select fraternity from query parameter if provided and valid
+      if (fraternityIdFromQuery) {
+        const queryFrat = fraternitiesToShow.find(frat => frat.id === fraternityIdFromQuery)
+        if (queryFrat) {
+          setSelectedFratId(fraternityIdFromQuery)
+        } else if (fraternitiesToShow.length > 0) {
+          // If query param fraternity is not in list, select first available
+          setSelectedFratId(fraternitiesToShow[0].id)
+        }
+      } else if (fraternitiesToShow.length === 1) {
+        // Auto-select if only one fraternity and no query param
+        setSelectedFratId(fraternitiesToShow[0].id)
       }
 
       setCheckingVerification(false)
     }
 
     checkVerification()
-  }, [user, userFraternities, authLoading, fraternityLoading])
+  }, [user, userFraternities, authLoading, fraternityLoading, fraternityIdFromQuery])
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -110,14 +145,17 @@ export default function CreateEventPage() {
       const { data, error: createError } = await createEventAction(submitData)
 
       if (createError) {
-        setError(createError.message || 'Failed to create event')
+        // Handle backend error responses - may include additional fields
+        const errorMessage = createError.message || createError.error?.message || 'Failed to create event'
+        setError(errorMessage)
         setLoading(false)
         return
       }
 
       if (data) {
-        // Redirect to event detail page or fraternity dashboard
-        router.push(`/events/${data.id}`)
+        // Redirect to event detail page (if exists) or fraternity dashboard
+        // For now, redirect to home until event detail page is implemented
+        router.push('/')
       } else {
         setError('Failed to create event')
         setLoading(false)
@@ -154,7 +192,14 @@ export default function CreateEventPage() {
           <XIcon className="w-6 h-6" />
         </Button>
         <h1 className="text-heading2 text-neutral-black">Create Event</h1>
-        <div className="w-10" /> {/* Spacer for centering */}
+        <Button 
+          variant="text" 
+          onClick={() => formRef.current?.requestSubmit()} 
+          className="p-2"
+          disabled={loading}
+        >
+          <CheckIcon className="w-6 h-6 text-primary-ui" />
+        </Button>
       </div>
 
       {/* Scrollable Content */}
@@ -174,7 +219,34 @@ export default function CreateEventPage() {
 
         {/* Event Form */}
         <div className="px-4">
+          {/* Show warning if selected fraternity can't create events */}
+          {selectedFratId && (() => {
+            const selectedFrat = verifiedFraternities.find(f => (f.id || f.fraternity?.id) === selectedFratId)
+            if (selectedFrat && !selectedFrat.canCreate) {
+              return (
+                <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-bodySmall font-semibold text-neutral-black mb-1">
+                        Fraternity Not Verified for Events
+                      </p>
+                      <p className="text-bodySmall text-gray-dark mb-2">
+                        {selectedFrat.reason || 'This fraternity does not meet the requirements to create events.'}
+                      </p>
+                      <p className="text-caption text-gray-medium">
+                        Current: {selectedFrat.qualityMemberCount || 0} verified members. 
+                        Required: {selectedFrat.membersNeeded ? `${selectedFrat.qualityMemberCount + selectedFrat.membersNeeded}` : '7'} verified members.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+            return null
+          })()}
           <EventForm
+            ref={formRef}
             fratId={selectedFratId}
             userFraternities={verifiedFraternities}
             onSubmit={handleSubmit}
@@ -203,6 +275,18 @@ export default function CreateEventPage() {
         userFraternities={userFraternities || []}
       />
     </main>
+  )
+}
+
+export default function CreateEventPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen w-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary-ui border-t-transparent"></div>
+      </main>
+    }>
+      <CreateEventPageContent />
+    </Suspense>
   )
 }
 

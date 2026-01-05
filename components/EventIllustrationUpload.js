@@ -55,7 +55,7 @@ export default function EventIllustrationUpload({ value, onChange, userId }) {
 
       let result
       try {
-        result = await uploadEventImageAction(formData, userId)
+        result = await uploadEventImageAction(null, formData, userId)
       } catch (fetchError) {
         console.error('EventIllustrationUpload: Server action call failed:', fetchError)
         setUploadError(

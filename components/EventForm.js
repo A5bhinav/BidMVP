@@ -3,26 +3,31 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import Badge from '@/components/ui/Badge'
 import DateTimePicker from '@/components/DateTimePicker'
 import EventTypeSelector from '@/components/EventTypeSelector'
-import { DocumentTextIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { DocumentTextIcon, PlusIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
-export default function EventForm({
+const EventForm = forwardRef(function EventForm({
   fratId,
   userFraternities = [],
   onSubmit,
   onCancel,
   loading = false,
   error = null
-}) {
+}, ref) {
   const [selectedFratId, setSelectedFratId] = useState(fratId || null)
+  const [isAutoSelected, setIsAutoSelected] = useState(false)
+  const [title, setTitle] = useState('')
   const [eventType, setEventType] = useState('')
   const [date, setDate] = useState('')
   const [endTime, setEndTime] = useState(null)
   const [visibility, setVisibility] = useState('public')
+  const [bidPrice, setBidPrice] = useState('')
+  const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
   const [validationErrors, setValidationErrors] = useState({})
   const [pendingSubmit, setPendingSubmit] = useState(false)
@@ -31,8 +36,14 @@ export default function EventForm({
   useEffect(() => {
     if (fratId) {
       setSelectedFratId(fratId)
+      setIsAutoSelected(true) // Pre-selected from query parameter or parent
     } else if (userFraternities.length === 1) {
-      setSelectedFratId(userFraternities[0].id)
+      // Handle nested structure: { fraternity: {...}, role: 'admin' }
+      const fraternityId = userFraternities[0].fraternity?.id || userFraternities[0].id
+      setSelectedFratId(fraternityId)
+      setIsAutoSelected(true) // Auto-selected because only one option
+    } else {
+      setIsAutoSelected(false)
     }
   }, [fratId, userFraternities])
 
@@ -64,6 +75,13 @@ export default function EventForm({
       errors.frat_id = 'Please select a fraternity'
     }
 
+    // Title validation
+    if (!title || !title.trim()) {
+      errors.title = 'Event title is required'
+    } else if (title.trim().length > 100) {
+      errors.title = 'Title must be 100 characters or less'
+    }
+
     // Event type validation
     if (!eventType) {
       errors.event_type = 'Event type is required'
@@ -73,29 +91,82 @@ export default function EventForm({
     if (!date) {
       errors.date = 'Event date is required'
     } else {
-      const eventDate = new Date(date)
-      const now = new Date()
-      // Allow today's date (set time to start of day for comparison)
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
-      
-      if (eventDateOnly < today) {
-        errors.date = 'Event date must be today or in the future'
+      try {
+        const eventDate = new Date(date)
+        if (isNaN(eventDate.getTime())) {
+          errors.date = 'Invalid date format'
+        } else {
+          const now = new Date()
+          // Allow today's date (set time to start of day for comparison)
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
+          
+          if (eventDateOnly < today) {
+            errors.date = 'Event date must be today or in the future'
+          }
+        }
+      } catch (e) {
+        errors.date = 'Invalid date format'
       }
     }
 
     // End time validation (if provided)
-    if (endTime) {
-      const startDate = new Date(date)
-      const endDate = new Date(endTime)
-      if (endDate <= startDate) {
-        errors.end_time = 'End time must be after start time'
+    if (endTime && date) {
+      try {
+        const startDate = new Date(date)
+        let endDate = new Date(endTime)
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          errors.end_time = 'Invalid date/time format'
+        } else {
+          // If end time is earlier than start time, assume it's the next day
+          // This handles events that span midnight (e.g., 9 PM to 1 AM)
+          if (endDate <= startDate) {
+            // Check if end time is actually on the next day
+            // Compare just the time portions (hours and minutes)
+            const startTimeOnly = startDate.getHours() * 60 + startDate.getMinutes()
+            const endTimeOnly = endDate.getHours() * 60 + endDate.getMinutes()
+            
+            // If end time is earlier in the day, it's likely the next day
+            if (endTimeOnly < startTimeOnly) {
+              // Add one day to end date
+              endDate = new Date(endDate)
+              endDate.setDate(endDate.getDate() + 1)
+            } else {
+              // End time is on same day but still before/equal to start - invalid
+              errors.end_time = 'End time must be after start time'
+            }
+          }
+          
+          // Final check: end date should be after start date
+          if (endDate <= startDate && !errors.end_time) {
+            errors.end_time = 'End time must be after start time'
+          }
+        }
+      } catch (e) {
+        errors.end_time = 'Invalid date/time format'
       }
     }
 
     // Visibility validation
     if (!visibility) {
       errors.visibility = 'Visibility is required'
+    }
+
+    // Bid price validation (required)
+    const trimmedBidPrice = bidPrice ? bidPrice.toString().trim() : ''
+    if (!trimmedBidPrice) {
+      errors.bid_price = 'Bid price is required'
+    } else {
+      const price = parseFloat(trimmedBidPrice)
+      if (isNaN(price) || price < 0) {
+        errors.bid_price = 'Bid price must be a valid number greater than or equal to 0'
+      }
+    }
+
+    // Location validation (optional, but check max length)
+    if (location && location.trim().length > 200) {
+      errors.location = 'Location must be 200 characters or less'
     }
 
     // Description validation (optional, but check max length)
@@ -106,6 +177,14 @@ export default function EventForm({
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
   }
+
+  // Expose submit function to parent via ref
+  const formRef = useRef(null)
+  useImperativeHandle(ref, () => ({
+    requestSubmit: () => {
+      formRef.current?.requestSubmit()
+    }
+  }))
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -124,10 +203,13 @@ export default function EventForm({
       // Prepare event data
       const eventData = {
         frat_id: selectedFratId,
+        title: title.trim(),
         date: date, // Already ISO 8601 TIMESTAMP from DateTimePicker
         end_time: endTime || null, // Already ISO 8601 TIMESTAMP from DateTimePicker
         event_type: eventType,
         visibility: visibility,
+        bid_price: parseFloat(bidPrice.trim()),
+        location: location.trim() || null,
         description: description.trim() || null,
         timezone: timezone
       }
@@ -141,7 +223,7 @@ export default function EventForm({
     }
   }
 
-  // Handle end time change (uses same date as start)
+  // Handle end time change (adjusts to next day if needed)
   const handleEndTimeChange = (isoString) => {
     if (!date) {
       setValidationErrors({
@@ -151,51 +233,164 @@ export default function EventForm({
       return
     }
 
-    // DateTimePicker already returns ISO string, just set it
-    setEndTime(isoString)
+    if (!isoString) {
+      setEndTime(null)
+      return
+    }
+
+    const startDate = new Date(date)
+    let endDate = new Date(isoString)
+    
+    // If end time is earlier than start time, assume it's the next day
+    // This handles events that span midnight (e.g., 9 PM to 1 AM)
+    if (endDate <= startDate) {
+      const startTimeOnly = startDate.getHours() * 60 + startDate.getMinutes()
+      const endTimeOnly = endDate.getHours() * 60 + endDate.getMinutes()
+      
+      // If end time is earlier in the day, it's the next day
+      if (endTimeOnly < startTimeOnly) {
+        endDate = new Date(endDate)
+        endDate.setDate(endDate.getDate() + 1)
+        // Update the endTime state with the adjusted date
+        setEndTime(endDate.toISOString())
+      } else {
+        // Same day but still invalid - let validation handle it
+        setEndTime(isoString)
+      }
+    } else {
+      // End time is already after start time, use as-is
+      setEndTime(isoString)
+    }
+    
+    // Clear validation error if it exists
     if (validationErrors.end_time) {
       setValidationErrors({ ...validationErrors, end_time: null })
     }
   }
 
+  // Get selected fraternity name for display
+  const selectedFraternity = userFraternities.find((frat) => {
+    const fraternityId = frat.fraternity?.id || frat.id
+    return fraternityId === selectedFratId
+  })
+  const selectedFraternityName = selectedFraternity 
+    ? (selectedFraternity.fraternity?.name || selectedFraternity.name)
+    : null
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Fraternity Selection (if multiple) */}
-      {userFraternities.length > 1 && (
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+      {/* Fraternity Selection - Always show if there's a selection or multiple options */}
+      {(selectedFratId || userFraternities.length > 1) && (
         <div>
-          <label className="block text-bodySmall font-semibold mb-2 text-neutral-black">
-            Fraternity <span className="text-error">*</span>
-          </label>
-          <select
-            value={selectedFratId || ''}
-            onChange={(e) => {
-              setSelectedFratId(e.target.value)
-              if (validationErrors.frat_id) {
-                setValidationErrors({ ...validationErrors, frat_id: null })
-              }
-            }}
-            className={`
-              w-full rounded-md border px-4 py-3 text-base transition-all
-              bg-white
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-bodySmall font-semibold text-neutral-black">
+              Fraternity <span className="text-error">*</span>
+            </label>
+            {isAutoSelected && selectedFratId && (
+              <Badge variant="status" status="active" className="text-xs flex items-center gap-1">
+                <CheckCircleIcon className="w-3 h-3" />
+                Auto-selected
+              </Badge>
+            )}
+          </div>
+          
+          {userFraternities.length > 1 ? (
+            // Multiple fraternities - show dropdown
+            <>
+              <select
+                value={selectedFratId || ''}
+                onChange={(e) => {
+                  setSelectedFratId(e.target.value)
+                  setIsAutoSelected(false) // User manually selected, no longer auto-selected
+                  if (validationErrors.frat_id) {
+                    setValidationErrors({ ...validationErrors, frat_id: null })
+                  }
+                }}
+                className={`
+                  w-full rounded-md border px-4 py-3 text-base transition-all
+                  bg-white
+                  ${validationErrors.frat_id
+                    ? 'border-error focus:border-error focus:ring-error'
+                    : 'border-gray-border focus:border-primary-ui focus:ring-primary-ui'
+                  }
+                  focus:outline-none focus:ring-2 focus:ring-offset-2
+                `}
+              >
+                <option value="">Select a fraternity</option>
+                {userFraternities.map((frat) => {
+                  // Handle nested structure: { fraternity: {...}, role: 'admin' }
+                  const fraternityId = frat.fraternity?.id || frat.id
+                  const fraternityName = frat.fraternity?.name || frat.name
+                  return (
+                    <option key={fraternityId} value={fraternityId}>
+                      {fraternityName}
+                    </option>
+                  )
+                })}
+              </select>
+              {validationErrors.frat_id && (
+                <p className="text-bodySmall text-error mt-1">{validationErrors.frat_id}</p>
+              )}
+            </>
+          ) : (
+            // Single fraternity - show as read-only display with option to change
+            <div className={`
+              w-full rounded-md border px-4 py-3 text-base
+              bg-gray-light
               ${validationErrors.frat_id
-                ? 'border-error focus:border-error focus:ring-error'
-                : 'border-gray-border focus:border-primary-ui focus:ring-primary-ui'
+                ? 'border-error'
+                : 'border-gray-border'
               }
-              focus:outline-none focus:ring-2 focus:ring-offset-2
-            `}
-          >
-            <option value="">Select a fraternity</option>
-            {userFraternities.map((frat) => (
-              <option key={frat.id} value={frat.id}>
-                {frat.name}
-              </option>
-            ))}
-          </select>
-          {validationErrors.frat_id && (
-            <p className="text-bodySmall text-error mt-1">{validationErrors.frat_id}</p>
+            `}>
+              <div className="flex items-center justify-between">
+                <span className="text-bodySmall text-neutral-black font-medium">
+                  {selectedFraternityName || 'No fraternity selected'}
+                </span>
+                {isAutoSelected && (
+                  <span className="text-caption text-gray-medium flex items-center gap-1">
+                    <CheckCircleIcon className="w-4 h-4 text-primary-ui" />
+                    Selected automatically
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {isAutoSelected && selectedFratId && (
+            <p className="text-caption text-gray-medium mt-2">
+              {userFraternities.length === 1 
+                ? 'This fraternity was automatically selected because it\'s the only verified fraternity you can create events for.'
+                : 'This fraternity was pre-selected based on your current context. You can change it if needed.'
+              }
+            </p>
           )}
         </div>
       )}
+
+      {/* Event Title */}
+      <div>
+        <label className="block text-bodySmall font-semibold mb-2 text-neutral-black">
+          Event Title <span className="text-error">*</span>
+        </label>
+        <Input
+          type="text"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value)
+            if (validationErrors.title) {
+              setValidationErrors({ ...validationErrors, title: null })
+            }
+          }}
+          placeholder="e.g., Spring Formal, Rush Mixer, etc."
+          error={validationErrors.title}
+          maxLength={100}
+        />
+        {!validationErrors.title && (
+          <p className="text-caption text-gray-medium mt-1">
+            {title.length}/100 characters
+          </p>
+        )}
+      </div>
 
       {/* Event Type */}
       <EventTypeSelector
@@ -263,7 +458,7 @@ export default function EventForm({
                   type="time"
                   value={endTime}
                   onChange={handleEndTimeChange}
-                  baseDate={date}
+                  baseDate={endTime || date}
                   label=""
                   error={validationErrors.end_time}
                   displayFormat="pill"
@@ -320,6 +515,66 @@ export default function EventForm({
         </div>
         {validationErrors.visibility && (
           <p className="text-bodySmall text-error mt-1">{validationErrors.visibility}</p>
+        )}
+      </div>
+
+      {/* Bid Price */}
+      <div>
+        <label className="block text-bodySmall font-semibold mb-2 text-neutral-black">
+          Bid Price <span className="text-error">*</span>
+        </label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-bodySmall text-gray-medium">
+            $
+          </span>
+          <Input
+            type="number"
+            value={bidPrice}
+            onChange={(e) => {
+              setBidPrice(e.target.value)
+              if (validationErrors.bid_price) {
+                setValidationErrors({ ...validationErrors, bid_price: null })
+              }
+            }}
+            placeholder="0.00"
+            error={validationErrors.bid_price}
+            min="0"
+            step="0.01"
+            className="pl-8"
+          />
+        </div>
+        {validationErrors.bid_price && (
+          <p className="text-bodySmall text-error mt-1">{validationErrors.bid_price}</p>
+        )}
+        {!validationErrors.bid_price && (
+          <p className="text-caption text-gray-medium mt-1">
+            Enter the bid price for this event
+          </p>
+        )}
+      </div>
+
+      {/* Location */}
+      <div>
+        <label className="block text-bodySmall font-semibold mb-2 text-neutral-black">
+          Location <span className="text-gray-medium">(Optional)</span>
+        </label>
+        <Input
+          type="text"
+          value={location}
+          onChange={(e) => {
+            setLocation(e.target.value)
+            if (validationErrors.location) {
+              setValidationErrors({ ...validationErrors, location: null })
+            }
+          }}
+          placeholder="e.g., 123 Main St, City, State"
+          error={validationErrors.location}
+          maxLength={200}
+        />
+        {!validationErrors.location && (
+          <p className="text-caption text-gray-medium mt-1">
+            {location.length}/200 characters
+          </p>
         )}
       </div>
 
@@ -418,5 +673,7 @@ export default function EventForm({
       </div>
     </form>
   )
-}
+})
+
+export default EventForm
 
