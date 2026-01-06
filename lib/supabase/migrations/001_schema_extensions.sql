@@ -49,9 +49,19 @@ ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'public' CHECK (visibility IN (
 ALTER TABLE event 
 ADD COLUMN IF NOT EXISTS qr_code TEXT UNIQUE;
 
--- Add location field (optional)
+-- Add location field (required for automatic check-out)
 ALTER TABLE event 
 ADD COLUMN IF NOT EXISTS location TEXT;
+
+-- Add geocoded coordinates cache for location (for automatic check-out)
+ALTER TABLE event 
+ADD COLUMN IF NOT EXISTS location_lat NUMERIC(10, 8),
+ADD COLUMN IF NOT EXISTS location_lng NUMERIC(10, 8);
+
+-- Add index for location coordinate queries
+CREATE INDEX IF NOT EXISTS idx_event_location_coords 
+ON event(location_lat, location_lng) 
+WHERE location_lat IS NOT NULL AND location_lng IS NOT NULL;
 
 -- Add line_skip_price field (optional)
 ALTER TABLE event 
@@ -114,11 +124,22 @@ ADD COLUMN IF NOT EXISTS is_checked_in BOOLEAN DEFAULT TRUE;
 ALTER TABLE checkin 
 ADD COLUMN IF NOT EXISTS entry_method TEXT CHECK (entry_method IN ('approved', 'qr_scan', 'manual'));
 
+-- Add location tracking columns for geolocation-based automatic check-out
+ALTER TABLE checkin 
+ADD COLUMN IF NOT EXISTS last_location_lat NUMERIC(10, 8),
+ADD COLUMN IF NOT EXISTS last_location_lng NUMERIC(10, 8),
+ADD COLUMN IF NOT EXISTS last_location_at TIMESTAMP;
+
 -- Add index on is_checked_in for live attendee queries
 CREATE INDEX IF NOT EXISTS idx_checkin_is_checked_in ON checkin(is_checked_in) WHERE is_checked_in = TRUE;
 
 -- Add index on event_id + is_checked_in for event attendee queries
 CREATE INDEX IF NOT EXISTS idx_checkin_event_checked ON checkin(event_id, is_checked_in);
+
+-- Add index for location tracking queries
+CREATE INDEX IF NOT EXISTS idx_checkin_location_tracking 
+ON checkin(event_id, user_id, last_location_at) 
+WHERE is_checked_in = TRUE AND last_location_lat IS NOT NULL;
 
 -- ============================================
 -- 5. Event updated_at trigger
