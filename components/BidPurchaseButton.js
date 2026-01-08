@@ -24,8 +24,10 @@ export default function BidPurchaseButton({
   const [loading, setLoading] = useState(false)
   const [checkingPurchase, setCheckingPurchase] = useState(true)
   const [alreadyPurchased, setAlreadyPurchased] = useState(false)
+  const [remainingBids, setRemainingBids] = useState(null)
+  const [purchaseError, setPurchaseError] = useState(null)
 
-  // Check if user has already purchased a bid for this event
+  // Check if user has already purchased a bid and get remaining bid count
   // Note: getEventRevenueAction requires admin access, so this check may fail for regular users
   // In that case, we'll just not show the "already purchased" state, but the button will still work
   useEffect(() => {
@@ -45,6 +47,13 @@ export default function BidPurchaseButton({
             (record) => record.user_id === user.id && record.type === 'bid'
           )
           setAlreadyPurchased(!!userBidPurchase)
+
+          // Calculate remaining bids if max_bids is set
+          if (event?.max_bids && event.max_bids > 0) {
+            const bidCount = data.records.filter(r => r.type === 'bid').length
+            const remaining = event.max_bids - bidCount
+            setRemainingBids(remaining > 0 ? remaining : 0)
+          }
         }
         // If error is due to authorization (not admin), that's OK - we just won't show "already purchased"
       } catch (error) {
@@ -56,14 +65,21 @@ export default function BidPurchaseButton({
     }
 
     checkPurchaseStatus()
-  }, [user?.id, eventId])
+  }, [user?.id, eventId, event?.max_bids])
 
   const handlePurchase = async () => {
     if (disabled || loading || !eventId || !event || !event.bid_price || event.bid_price <= 0) {
       return
     }
 
+    // Check if bids are sold out
+    if (remainingBids !== null && remainingBids <= 0) {
+      setPurchaseError('All bids have been sold. No more bids available.')
+      return
+    }
+
     setLoading(true)
+    setPurchaseError(null)
 
     try {
       const { data, error } = await createStripeCheckoutSessionAction(
@@ -75,6 +91,7 @@ export default function BidPurchaseButton({
 
       if (error) {
         console.error('Error creating checkout session:', error)
+        setPurchaseError(error.message || 'Failed to create checkout session')
         if (onError) {
           onError(error.message || 'Failed to create checkout session')
         }
@@ -90,6 +107,7 @@ export default function BidPurchaseButton({
       }
     } catch (error) {
       console.error('Error initiating bid purchase:', error)
+      setPurchaseError(error.message || 'Failed to initiate payment')
       if (onError) {
         onError(error.message || 'Failed to initiate payment')
       }
@@ -141,20 +159,35 @@ export default function BidPurchaseButton({
 
   // Button variant
   if (variant === 'button') {
+    const isSoldOut = remainingBids !== null && remainingBids <= 0
     return (
+      <div className="w-full">
+        {event.max_bids && remainingBids !== null && (
+          <p className="text-sm text-gray-medium mb-2 text-center">
+            {remainingBids > 0 
+              ? `${remainingBids} of ${event.max_bids} bids remaining`
+              : 'All bids sold out'
+            }
+          </p>
+        )}
+        {purchaseError && (
+          <p className="text-sm text-red-600 mb-2 text-center">{purchaseError}</p>
+        )}
       <Button
         variant="primary"
         size="medium"
         onClick={handlePurchase}
-        disabled={disabled || loading}
+          disabled={disabled || loading || isSoldOut}
         className="w-full"
       >
-        {loading ? 'Processing...' : `Buy Bid - $${event.bid_price.toFixed(2)}`}
+          {loading ? 'Processing...' : isSoldOut ? 'Sold Out' : `Buy Bid - $${event.bid_price.toFixed(2)}`}
       </Button>
+      </div>
     )
   }
 
   // Card variant
+  const isSoldOut = remainingBids !== null && remainingBids <= 0
   return (
     <Card variant="default" className="p-4">
       <div className="space-y-3">
@@ -163,15 +196,26 @@ export default function BidPurchaseButton({
           <p className="text-lg font-bold text-primary-ui">
             ${event.bid_price.toFixed(2)}
           </p>
+          {event.max_bids && remainingBids !== null && (
+            <p className="text-sm text-gray-medium mt-1">
+              {remainingBids > 0 
+                ? `${remainingBids} of ${event.max_bids} bids remaining`
+                : 'All bids sold out'
+              }
+            </p>
+          )}
         </div>
+        {purchaseError && (
+          <p className="text-sm text-red-600">{purchaseError}</p>
+        )}
         <Button
           variant="primary"
           size="medium"
           onClick={handlePurchase}
-          disabled={disabled || loading}
+          disabled={disabled || loading || isSoldOut}
           className="w-full"
         >
-          {loading ? 'Processing...' : 'Purchase Bid'}
+          {loading ? 'Processing...' : isSoldOut ? 'Sold Out' : 'Purchase Bid'}
         </Button>
       </div>
     </Card>

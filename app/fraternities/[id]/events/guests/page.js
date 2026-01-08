@@ -6,8 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getFraternityEventsAction } from '@/app/actions/guests'
-import { getEventRequestsAction } from '@/app/actions/guests'
+import { getFraternityEventsAction, getEventsPendingCountsAction } from '@/app/actions/guests'
 import { getFraternityAction } from '@/app/actions/fraternity'
 import { checkIsAdminAction } from '@/app/actions/fraternity'
 import Card from '@/components/ui/Card'
@@ -67,24 +66,22 @@ export default function FraternityEventsGuestsPage() {
           return
         }
 
-        // Load pending counts for each event
-        const eventsWithCounts = await Promise.all(
-          (eventsData || []).map(async (event) => {
-            try {
-              const { data: requestsData } = await getEventRequestsAction(event.id, 'pending')
-              return {
-                ...event,
-                pendingCount: requestsData?.length || 0,
-              }
-            } catch (err) {
-              console.error(`Error loading pending count for event ${event.id}:`, err)
-              return {
-                ...event,
-                pendingCount: 0,
-              }
-            }
-          })
-        )
+        // Load pending counts for all events in a single optimized query
+        const eventIds = (eventsData || []).map(event => event.id)
+        let pendingCountsMap = new Map()
+        
+        if (eventIds.length > 0) {
+          const { data: countsData, error: countsError } = await getEventsPendingCountsAction(eventIds)
+          if (!countsError && countsData) {
+            pendingCountsMap = countsData
+          }
+        }
+
+        // Merge events with their pending counts
+        const eventsWithCounts = (eventsData || []).map(event => ({
+          ...event,
+          pendingCount: pendingCountsMap.get(event.id) || 0,
+        }))
 
         setEvents(eventsWithCounts)
       } catch (err) {
@@ -188,7 +185,7 @@ export default function FraternityEventsGuestsPage() {
         <div className="max-w-2xl mx-auto">
           <Card variant="default" className="p-6">
             <p className="text-bodySmall text-error mb-4">{error}</p>
-            <Button variant="primary" size="medium" onClick={() => router.back()}>
+            <Button variant="primary" size="medium" onClick={() => router.push('/profile')}>
               Go Back
             </Button>
           </Card>
@@ -204,7 +201,7 @@ export default function FraternityEventsGuestsPage() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/profile')}
               className="p-2 hover:bg-gray-light rounded-full transition-colors"
             >
               <ArrowLeftIcon className="w-6 h-6 text-gray-dark" />

@@ -27,6 +27,7 @@ const EventForm = forwardRef(function EventForm({
   const [endTime, setEndTime] = useState(null)
   const [visibility, setVisibility] = useState('public')
   const [bidPrice, setBidPrice] = useState('')
+  const [maxBids, setMaxBids] = useState('')
   const [lineSkipPrice, setLineSkipPrice] = useState('')
   const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
@@ -221,6 +222,7 @@ const EventForm = forwardRef(function EventForm({
         event_type: eventType,
         visibility: visibility,
         bid_price: parseFloat(bidPrice.trim()),
+        max_bids: maxBids && maxBids.trim() ? parseInt(maxBids.trim(), 10) : null,
         line_skip_price: lineSkipPrice && lineSkipPrice.trim() ? parseFloat(lineSkipPrice.trim()) : null,
         location: location.trim() || null,
         description: description.trim() || null,
@@ -562,6 +564,35 @@ const EventForm = forwardRef(function EventForm({
         {!validationErrors.bid_price && (
           <p className="text-caption text-gray-medium mt-1">
             Enter the bid price for this event
+          </p>
+        )}
+      </div>
+
+      {/* Maximum Bids */}
+      <div>
+        <label className="block text-bodySmall font-semibold mb-2 text-neutral-black">
+          Maximum Bids <span className="text-gray-medium">(Optional)</span>
+        </label>
+        <Input
+          type="number"
+          value={maxBids}
+          onChange={(e) => {
+            setMaxBids(e.target.value)
+            if (validationErrors.max_bids) {
+              setValidationErrors({ ...validationErrors, max_bids: null })
+            }
+          }}
+          placeholder="Leave empty for unlimited"
+          error={validationErrors.max_bids}
+          min="1"
+          step="1"
+        />
+        {validationErrors.max_bids && (
+          <p className="text-bodySmall text-error mt-1">{validationErrors.max_bids}</p>
+        )}
+        {!validationErrors.max_bids && (
+          <p className="text-caption text-gray-medium mt-1">
+            Limit the number of bids that can be sold. Leave empty for unlimited bids.
           </p>
         )}
       </div>

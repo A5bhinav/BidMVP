@@ -8,6 +8,7 @@ import { checkInUserAction } from '@/app/actions/checkin'
 import { checkIsAdminAction } from '@/app/actions/fraternity'
 import QRScanner from '@/components/QRScanner'
 import CheckInList from '@/components/CheckInList'
+import CheckInConfirmationModal from '@/components/CheckInConfirmationModal'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import LayoutWrapper from '@/components/LayoutWrapper'
@@ -26,14 +27,22 @@ export default function CheckInPage() {
   const [event, setEvent] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [pendingCheckIn, setPendingCheckIn] = useState(null) // { userId, qrCode }
+  const [showConfirmation, setShowConfirmation] = useState(false)
 
   // Load event and check admin status
   useEffect(() => {
     const loadEvent = async () => {
-      if (authLoading) return
+      // Wait for auth to finish loading
+      if (authLoading) {
+        setLoading(true)
+        return
+      }
 
+      // If no user after auth loads, redirect
       if (!user?.id) {
         router.push('/')
+        setLoading(false)
         return
       }
 
@@ -46,7 +55,7 @@ export default function CheckInPage() {
       setScanError(null)
 
       try {
-        // Get event
+        // Get event first (we need it to check admin access)
         const { data: eventData, error: eventError } = await getEventAction(eventId)
         if (eventError || !eventData) {
           setScanError('Event not found')
@@ -57,6 +66,7 @@ export default function CheckInPage() {
         setEvent(eventData)
 
         // Check if user is admin of event's fraternity
+        // Note: This must be done after getting event since we need eventData.frat_id
         const { data: adminCheck, error: adminError } = await checkIsAdminAction(eventData.frat_id)
         if (adminError || !adminCheck?.isAdmin) {
           setScanError('Only admins can access check-in')
@@ -95,11 +105,28 @@ export default function CheckInPage() {
         return
       }
       
-      // Call check-in API
+      // Show confirmation modal instead of checking in immediately
+      // This allows admin to verify the person matches the profile
+      setPendingCheckIn({ userId, qrCode })
+      setShowConfirmation(true)
+      setScanning(false) // Pause scanning while modal is open
+    } catch (err) {
+      setScanError(err.message || 'Failed to process QR code')
+    }
+  }
+
+  const handleConfirmCheckIn = async () => {
+    if (!pendingCheckIn) return
+    
+    setShowConfirmation(false)
+    setScanError(null)
+    setScanSuccess(false)
+    
+    try {
       const { data, error } = await checkInUserAction(
         eventId,
-        userId,
-        qrCode,
+        pendingCheckIn.userId,
+        pendingCheckIn.qrCode,
         user.id
       )
       
@@ -109,12 +136,21 @@ export default function CheckInPage() {
         setScanSuccess(true)
         // Real-time subscription will update the list
         setTimeout(() => setScanSuccess(false), 2000)
-        // Stop scanning after successful check-in
-        setScanning(false)
       }
     } catch (err) {
       setScanError(err.message || 'Failed to check in user')
+    } finally {
+      setPendingCheckIn(null)
+      // Resume scanning after a brief delay
+      setTimeout(() => setScanning(true), 500)
     }
+  }
+
+  const handleCancelCheckIn = () => {
+    setShowConfirmation(false)
+    setPendingCheckIn(null)
+    // Resume scanning
+    setScanning(true)
   }
 
   const handleCheckOut = (userId) => {
@@ -157,11 +193,20 @@ export default function CheckInPage() {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-border px-4 py-4">
           <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => router.push(`/events/${eventId}/guests`)}
+              >
+                ← Back
+              </Button>
             <div>
               <h1 className="text-xl font-bold text-neutral-black">Check-In Scanner</h1>
               {event && (
                 <p className="text-sm text-gray-medium mt-1">{event.title}</p>
               )}
+              </div>
             </div>
             <Button
               variant={scanning ? 'secondary' : 'primary'}
@@ -213,6 +258,14 @@ export default function CheckInPage() {
           />
         </div>
       </div>
+
+      {/* Check-In Confirmation Modal */}
+      <CheckInConfirmationModal
+        isOpen={showConfirmation}
+        userId={pendingCheckIn?.userId}
+        onConfirm={handleConfirmCheckIn}
+        onCancel={handleCancelCheckIn}
+      />
     </LayoutWrapper>
   )
 }

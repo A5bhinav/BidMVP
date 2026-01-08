@@ -42,6 +42,35 @@ export default function EventGuestsPage() {
 
   const eventId = params.id
 
+  // Define load functions first (using useCallback to prevent unnecessary re-renders)
+  const loadRequests = async () => {
+    if (!eventId) return
+    try {
+      const { data, error: requestsError } = await getEventRequestsAction(eventId, 'pending')
+      if (requestsError) {
+        console.error('Error loading requests:', requestsError)
+        return
+      }
+      setRequests(data || [])
+    } catch (err) {
+      console.error('Error loading requests:', err)
+    }
+  }
+
+  const loadGuestList = async () => {
+    if (!eventId) return
+    try {
+      const { data, error: guestsError } = await getGuestListAction(eventId)
+      if (guestsError) {
+        console.error('Error loading guest list:', guestsError)
+        return
+      }
+      setGuestList(data || [])
+    } catch (err) {
+      console.error('Error loading guest list:', err)
+    }
+  }
+
   // Check payment success/cancel from URL params
   useEffect(() => {
     const payment = searchParams.get('payment')
@@ -60,6 +89,9 @@ export default function EventGuestsPage() {
   useEffect(() => {
     const loadData = async () => {
       if (authLoading || !user?.id || !eventId) {
+        if (!authLoading) {
+          setLoading(false)
+        }
         return
       }
 
@@ -67,7 +99,7 @@ export default function EventGuestsPage() {
       setError(null)
 
       try {
-        // Load event
+        // Load event first (we need it to check admin access)
         const { data: eventData, error: eventError } = await getEventAction(eventId)
         if (eventError || !eventData) {
           setError(eventError?.message || 'Event not found')
@@ -76,16 +108,18 @@ export default function EventGuestsPage() {
         }
         setEvent(eventData)
 
-        // Check if user is admin of event's fraternity
-        const { data: adminData } = await checkIsAdminAction(eventData.frat_id)
-        if (!adminData?.isAdmin) {
+        // Check admin status
+        const adminResult = await checkIsAdminAction(eventData.frat_id)
+        
+        // Check if admin check returned an error or if user is not admin
+        if (adminResult.error || !adminResult.data?.isAdmin) {
           setError('You must be an admin of this fraternity to manage guest lists')
           setLoading(false)
           return
         }
         setIsAdmin(true)
 
-        // Load requests and guest list
+        // Load requests and guest list in parallel (both need admin, already checked above)
         await Promise.all([
           loadRequests(),
           loadGuestList(),
@@ -99,33 +133,8 @@ export default function EventGuestsPage() {
     }
 
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, user?.id, authLoading])
-
-  const loadRequests = async () => {
-    try {
-      const { data, error: requestsError } = await getEventRequestsAction(eventId, 'pending')
-      if (requestsError) {
-        console.error('Error loading requests:', requestsError)
-        return
-      }
-      setRequests(data || [])
-    } catch (err) {
-      console.error('Error loading requests:', err)
-    }
-  }
-
-  const loadGuestList = async () => {
-    try {
-      const { data, error: guestsError } = await getGuestListAction(eventId)
-      if (guestsError) {
-        console.error('Error loading guest list:', guestsError)
-        return
-      }
-      setGuestList(data || [])
-    } catch (err) {
-      console.error('Error loading guest list:', err)
-    }
-  }
 
   const handleApprove = async (requestId) => {
     setProcessingRequest(requestId)
@@ -308,7 +317,14 @@ export default function EventGuestsPage() {
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                // Navigate back to Manage Guest Lists page for this fraternity
+                if (event?.frat_id) {
+                  router.push(`/fraternities/${event.frat_id}/events/guests`)
+                } else {
+                  router.back()
+                }
+              }}
               className="p-2 hover:bg-gray-light rounded-full transition-colors"
             >
               <XMarkIcon className="w-6 h-6 text-gray-dark" />
@@ -316,7 +332,14 @@ export default function EventGuestsPage() {
             <h1 className="text-heading2 text-neutral-black flex-1 text-center">
               Guest List
             </h1>
-            <div className="w-10" /> {/* Spacer for centering */}
+            <Button
+              variant="primary"
+              size="small"
+              onClick={() => router.push(`/events/${eventId}/checkin`)}
+              className="whitespace-nowrap"
+            >
+              Check-In
+            </Button>
           </div>
         </div>
       </div>

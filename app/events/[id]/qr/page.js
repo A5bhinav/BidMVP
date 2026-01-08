@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getEventAction } from '@/app/actions/events'
 import { isUserCheckedInAction } from '@/app/actions/checkin'
 import { geocodeAddressAction } from '@/app/actions/geocoding'
+import { checkUserApprovedForEventAction } from '@/app/actions/guests'
 import QRCode from 'qrcode'
-import GeolocationTracker from '@/components/GeolocationTracker'
+import GeolocationTrackerWrapper from '@/components/GeolocationTrackerWrapper'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
 import LayoutWrapper from '@/components/LayoutWrapper'
 
 function formatDate(dateString) {
@@ -65,8 +67,14 @@ export default function QRDisplayPage() {
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [eventLocation, setEventLocation] = useState(null)
+  const [isApproved, setIsApproved] = useState(false)
+  const [approvalError, setApprovalError] = useState(null)
+  const [locationPermission, setLocationPermission] = useState(null) // 'granted', 'denied', 'prompt', null
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false)
+  const [isLocationTracking, setIsLocationTracking] = useState(false)
 
-  const checkCheckInStatus = async () => {
+  // Memoize checkCheckInStatus to avoid recreating on every render
+  const checkCheckInStatus = useCallback(async () => {
     if (!eventId || !user?.id) return
     const { data, error } = await isUserCheckedInAction(eventId, user.id)
     if (!error && data) {
@@ -74,7 +82,7 @@ export default function QRDisplayPage() {
     } else {
       setCheckInStatus(null)
     }
-  }
+  }, [eventId, user?.id])
 
   // Load event and generate QR code
   useEffect(() => {
@@ -94,8 +102,13 @@ export default function QRDisplayPage() {
       setLoading(true)
 
       try {
-        // Get event
-        const { data: eventData, error: eventError } = await getEventAction(eventId)
+        // Get event and check approval in parallel for faster loading
+        const [eventResult, approvalResult] = await Promise.all([
+          getEventAction(eventId),
+          checkUserApprovedForEventAction(eventId)
+        ])
+
+        const { data: eventData, error: eventError } = eventResult
         if (eventError || !eventData) {
           setLoading(false)
           return
@@ -103,10 +116,29 @@ export default function QRDisplayPage() {
 
         setEvent(eventData)
 
-        // Parse event location for geolocation tracking
+        // Handle approval check result
+        const { data: approvalData, error: approvalError } = approvalResult
+        if (approvalError) {
+          setApprovalError(approvalError.message || 'Failed to check approval status')
+          setLoading(false)
+          return
+        }
+
+        if (!approvalData?.isApproved) {
+          setApprovalError('You must be approved for this event to view your QR code')
+          setLoading(false)
+          return
+        }
+
+        setIsApproved(true)
+
+        // Parse event location for geolocation tracking (can be done in parallel with QR generation)
         if (eventData.location) {
-          const location = await parseEventLocation(eventData.location)
-          setEventLocation(location)
+          parseEventLocation(eventData.location).then(location => {
+            setEventLocation(location)
+          }).catch(err => {
+            console.error('Error parsing event location:', err)
+          })
         }
 
         // Generate QR code string
@@ -128,6 +160,7 @@ export default function QRDisplayPage() {
         checkCheckInStatus()
       } catch (err) {
         console.error('Error loading data:', err)
+        setApprovalError(err.message || 'Failed to load event data')
       } finally {
         setLoading(false)
       }
@@ -137,15 +170,23 @@ export default function QRDisplayPage() {
   }, [user?.id, eventId, authLoading, router])
 
   // Poll for check-in status updates (in case user gets checked in from another device)
+  // Note: Consider using Supabase Realtime subscription instead of polling for better performance
   useEffect(() => {
     if (!eventId || !user?.id) return
 
+    // Initial check
+    checkCheckInStatus()
+
+    // Poll every 5 seconds (only if not checked in to reduce unnecessary requests)
     const interval = setInterval(() => {
-      checkCheckInStatus()
+      // Only poll if not checked in to reduce load
+      if (!checkInStatus || !checkInStatus.is_checked_in) {
+        checkCheckInStatus()
+      }
     }, 5000) // Check every 5 seconds
 
     return () => clearInterval(interval)
-  }, [eventId, user?.id])
+  }, [eventId, user?.id, checkCheckInStatus, checkInStatus])
 
   if (authLoading || loading) {
     return (
@@ -167,6 +208,45 @@ export default function QRDisplayPage() {
           <Card className="p-8 text-center">
             <h1 className="text-xl font-bold mb-4">Event not found</h1>
             <p className="text-gray-medium">The event you're looking for doesn't exist.</p>
+          </Card>
+        </div>
+      </LayoutWrapper>
+    )
+  }
+
+  // Show error if user is not approved
+  if (approvalError || !isApproved) {
+    return (
+      <LayoutWrapper>
+        <div className="min-h-screen bg-gray-bg p-4">
+          <Card className="mb-4">
+            <h2 className="text-xl font-semibold text-neutral-black mb-2">{event.title}</h2>
+            <p className="text-bodySmall text-gray-medium mb-1">
+              {formatDate(event.date)} at {formatTime(event.date)}
+            </p>
+            {event.location && (
+              <p className="text-bodySmall text-gray-medium">
+                📍 {event.location}
+              </p>
+            )}
+          </Card>
+          <Card className="p-8 text-center">
+            <h1 className="text-xl font-bold mb-4 text-error">Access Denied</h1>
+            <p className="text-gray-medium mb-4">
+              {approvalError || 'You must be approved for this event to view your QR code'}
+            </p>
+            {event.visibility !== 'public' && (
+              <p className="text-bodySmall text-gray-medium mb-4">
+                This is an {event.visibility === 'invite-only' ? 'invite-only' : 'rush-only'} event. 
+                You need to request access and be approved by the event host before you can check in.
+              </p>
+            )}
+            <Button
+              variant="primary"
+              onClick={() => router.back()}
+            >
+              Go Back
+            </Button>
           </Card>
         </div>
       </LayoutWrapper>
@@ -217,10 +297,11 @@ export default function QRDisplayPage() {
           )}
         </Card>
 
-        {/* Geolocation Tracker - Start tracking when checked in */}
+        {/* Geolocation Tracker - User must enable after check-in */}
         {checkInStatus && checkInStatus.is_checked_in && eventLocation && (
           <Card className="mb-4 p-4">
-            <GeolocationTracker
+            <h3 className="font-semibold mb-3 text-neutral-black">Location Tracking</h3>
+            <GeolocationTrackerWrapper
               eventId={eventId}
               userId={user.id}
               eventLocation={eventLocation}
@@ -246,7 +327,7 @@ export default function QRDisplayPage() {
             <li>The host will scan it to check you in</li>
             <li>Keep this page open until you're checked in</li>
             {eventLocation && (
-              <li>Location tracking will start automatically after check-in</li>
+              <li>Enable location tracking after check-in for automatic check-out</li>
             )}
           </ol>
         </Card>

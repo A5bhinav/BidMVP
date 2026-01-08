@@ -109,23 +109,21 @@ export default function GeolocationTracker({
     trackLocation()
   }, [isTracking, trackLocation])
 
+  // Request location permission (called by user button click)
   const requestLocationPermission = useCallback(async () => {
     if (!navigator.geolocation) {
       onError?.(new Error('Geolocation is not supported by your browser'))
       setLocationPermission('denied')
-      return
+      return false
     }
 
     try {
-      // Request permission
+      // Check current permission status
+      let permissionState = 'prompt'
+      try {
       const permission = await navigator.permissions.query({ name: 'geolocation' })
+        permissionState = permission.state
       setLocationPermission(permission.state)
-
-      if (permission.state === 'granted' || permission.state === 'prompt') {
-        startTracking()
-      } else {
-        onError?.(new Error('Location permission denied. Manual check-out will be required.'))
-      }
 
       // Listen for permission changes
       permission.onchange = () => {
@@ -136,24 +134,72 @@ export default function GeolocationTracker({
           stopTracking()
         }
       }
+      } catch {
+        // Permissions API not supported - that's okay
+      }
+
+      // Request location (this will trigger browser prompt if needed)
+      // This is called from a user button click, so it's allowed
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          // Permission granted - start tracking
+          setLocationPermission('granted')
+          startTracking()
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            setLocationPermission('denied')
+            onError?.(new Error('Location access denied. Manual check-out will be required.'))
+          } else {
+            onError?.(new Error('Failed to get location'))
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      )
+      return true
     } catch (err) {
-      // Fallback: try to get location directly (will prompt user)
-      startTracking()
+      onError?.(new Error('Failed to request location permission'))
+      return false
     }
-  }, [startTracking, onError])
+  }, [startTracking, stopTracking, onError])
 
-  // Request location permission and start tracking
+  // Check permission status on mount (but don't request)
   useEffect(() => {
-    if (!eventId || !userId || !eventLocation) return
+    if (!navigator.geolocation) return
 
-    requestLocationPermission()
+    // Check permission status without requesting
+    navigator.permissions?.query({ name: 'geolocation' })
+      .then(permission => {
+        setLocationPermission(permission.state)
+        // If already granted, start tracking automatically
+        if (permission.state === 'granted') {
+          startTracking()
+        }
+        // Listen for permission changes
+        permission.onchange = () => {
+          setLocationPermission(permission.state)
+          if (permission.state === 'granted') {
+            startTracking()
+          } else {
+            stopTracking()
+          }
+        }
+      })
+      .catch(() => {
+        // Permissions API not supported - that's okay
+      })
     
     return () => {
       // Cleanup: stop tracking when component unmounts
       stopTracking()
     }
-  }, [eventId, userId, eventLocation, requestLocationPermission, stopTracking])
+  }, [eventId, userId, eventLocation, startTracking, stopTracking])
 
+  // Render tracking status
   return (
     <div className="text-sm text-gray-medium">
       {locationPermission === 'granted' && isTracking && (
@@ -165,4 +211,3 @@ export default function GeolocationTracker({
     </div>
   )
 }
-

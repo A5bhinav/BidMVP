@@ -9,7 +9,7 @@
 
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useAuth } from './AuthContext'
 import { getUserFraternitiesAction } from '@/app/actions/fraternity'
 
@@ -35,8 +35,8 @@ export function FraternityProvider({ children }) {
   const [error, setError] = useState(null) // Error message
   const [selectedFraternity, setSelectedFraternity] = useState(null) // Currently selected fraternity ID
 
-  // Fetch user's fraternities
-  const fetchUserFraternities = async () => {
+  // Fetch user's fraternities (memoized to avoid recreating on every render)
+  const fetchUserFraternities = useCallback(async () => {
     if (!user?.id) {
       setUserFraternities([])
       setLoading(false)
@@ -62,12 +62,12 @@ export function FraternityProvider({ children }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
 
-  // Refresh fraternities (reload after changes)
-  const refreshFraternities = async () => {
+  // Refresh fraternities (reload after changes) - memoized
+  const refreshFraternities = useCallback(async () => {
     await fetchUserFraternities()
-  }
+  }, [fetchUserFraternities])
 
   // Select a fraternity (for event creation, etc.)
   const selectFraternity = (fraternityId) => {

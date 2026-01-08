@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFraternity } from '@/contexts/FraternityContext'
@@ -60,9 +60,12 @@ export default function ProfilePage() {
     )
   }
 
-  // Filter to admin fraternities only
+  // Filter to admin fraternities only (memoized to avoid re-filtering on every render)
   // userFraternities structure: [{ fraternity: {...}, role: 'admin' }, ...]
-  const adminFraternities = userFraternities?.filter(frat => frat.role === 'admin') || []
+  const adminFraternities = useMemo(
+    () => userFraternities?.filter(frat => frat.role === 'admin') || [],
+    [userFraternities]
+  )
 
   if (!user) {
     return null

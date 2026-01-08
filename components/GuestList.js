@@ -3,6 +3,7 @@
 
 'use client'
 
+import { memo } from 'react'
 import Card from '@/components/ui/Card'
 import Avatar from '@/components/ui/Avatar'
 import SafetyBadge from '@/components/SafetyBadge'
@@ -35,7 +36,7 @@ function formatTimeAgo(timestamp) {
   return `${months}mo ago`
 }
 
-export default function GuestList({
+function GuestList({
   guests,
   onRemoveGuest,
   onViewProfile,
@@ -128,4 +129,7 @@ export default function GuestList({
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders when props haven't changed
+export default memo(GuestList)
 

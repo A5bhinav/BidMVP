@@ -64,7 +64,7 @@ export default function FraternityDashboardPage() {
     fetchFraternity()
   }, [fraternityId, user?.id, authLoading, router])
 
-  // Fetch admin status and event creation permission
+  // Fetch admin status and event creation permission in parallel
   useEffect(() => {
     const fetchAdminAndEvents = async () => {
       if (authLoading || !user?.id || !fraternityId || loading) {
@@ -75,16 +75,18 @@ export default function FraternityDashboardPage() {
       setEventsLoading(true)
 
       try {
-        // Check admin status
-        const { data: adminData, error: adminError } = await checkIsAdminAction(fraternityId)
-        if (!adminError && adminData) {
-          setIsAdmin(adminData.isAdmin || false)
+        // Check admin status and event creation permission in parallel for faster loading
+        const [adminResult, eventsResult] = await Promise.all([
+          checkIsAdminAction(fraternityId),
+          canCreateEventsAction(fraternityId)
+        ])
+
+        if (!adminResult.error && adminResult.data) {
+          setIsAdmin(adminResult.data.isAdmin || false)
         }
 
-        // Check event creation permission
-        const { data: eventsData, error: eventsError } = await canCreateEventsAction(fraternityId)
-        if (!eventsError && eventsData) {
-          setCanCreateEvents(eventsData)
+        if (!eventsResult.error && eventsResult.data) {
+          setCanCreateEvents(eventsResult.data)
         }
       } catch (err) {
         console.error('Error fetching admin/events status:', err)

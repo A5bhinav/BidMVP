@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getCheckedInUsersAction } from '@/app/actions/checkin'
 import ManualCheckOut from './ManualCheckOut'
@@ -23,20 +23,21 @@ export default function CheckInList({ eventId, adminUserId, onCheckOut }) {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const loadCheckedInUsers = async () => {
+  // Memoize load function to avoid recreating on every render
+  const loadCheckedInUsers = useCallback(async () => {
+    if (!eventId || !adminUserId) return
     setLoading(true)
     const { data, error } = await getCheckedInUsersAction(eventId, adminUserId)
     if (!error && data) {
       setCheckedInUsers(data)
     }
     setLoading(false)
-  }
+  }, [eventId, adminUserId])
 
   // Load initial check-ins
   useEffect(() => {
-    if (!eventId || !adminUserId) return
     loadCheckedInUsers()
-  }, [eventId, adminUserId])
+  }, [loadCheckedInUsers])
 
   // Real-time subscription
   useEffect(() => {
@@ -85,15 +86,18 @@ export default function CheckInList({ eventId, adminUserId, onCheckOut }) {
     }
   }, [eventId])
 
-  const filteredUsers = checkedInUsers.filter(checkIn => {
-    if (!searchQuery.trim()) return true
+  // Memoize filtered users to avoid re-filtering on every render
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return checkedInUsers
     const query = searchQuery.toLowerCase()
-    const user = checkIn.user
-    return (
-      user?.name?.toLowerCase().includes(query) ||
-      user?.email?.toLowerCase().includes(query)
-    )
-  })
+    return checkedInUsers.filter(checkIn => {
+      const user = checkIn.user
+      return (
+        user?.name?.toLowerCase().includes(query) ||
+        user?.email?.toLowerCase().includes(query)
+      )
+    })
+  }, [checkedInUsers, searchQuery])
 
   if (loading) {
     return (

@@ -13,6 +13,7 @@ import {
   getGuestList,
   searchUsers,
   getFraternityEvents,
+  getEventsPendingCounts,
 } from '@/lib/supabase/guests'
 import { createClient } from '@/lib/supabase/server'
 
@@ -133,5 +134,73 @@ export async function getFraternityEventsAction(fraternityId) {
     return { data: null, error: { message: 'Not authenticated' } }
   }
   return await getFraternityEvents(fraternityId, userId)
+}
+
+/**
+ * Get pending request counts for multiple events (optimized batch query)
+ * @param {Array<string>} eventIds - Array of event IDs
+ * @returns {Promise<{data: Map<string, number>|null, error: object|null}>}
+ */
+export async function getEventsPendingCountsAction(eventIds) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
+    return { data: null, error: { message: 'Not authenticated' } }
+  }
+  return await getEventsPendingCounts(eventIds, userId)
+}
+
+/**
+ * Check if user is approved for an event (has approved request or event is public)
+ * @param {string} eventId - Event ID
+ * @returns {Promise<{data: {isApproved: boolean, isPublic: boolean}|null, error: object|null}>}
+ */
+export async function checkUserApprovedForEventAction(eventId) {
+  const userId = await getCurrentUserId()
+  if (!userId) {
+    return { data: null, error: { message: 'Not authenticated' } }
+  }
+  
+  try {
+    const supabase = await createClient()
+    
+    // Get event to check visibility
+    const { data: event, error: eventError } = await supabase
+      .from('event')
+      .select('id, visibility')
+      .eq('id', eventId)
+      .single()
+    
+    if (eventError || !event) {
+      return { data: null, error: { message: 'Event not found' } }
+    }
+    
+    // Public events don't require approval
+    if (event.visibility === 'public') {
+      return { data: { isApproved: true, isPublic: true }, error: null }
+    }
+    
+    // For invite-only/rush-only events, check for approved request
+    const { data: request, error: requestError } = await supabase
+      .from('event_requests')
+      .select('id, status')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .eq('status', 'approved')
+      .maybeSingle()
+    
+    if (requestError) {
+      return { data: null, error: { message: requestError.message || 'Failed to check approval status' } }
+    }
+    
+    return { 
+      data: { 
+        isApproved: !!request, 
+        isPublic: false 
+      }, 
+      error: null 
+    }
+  } catch (error) {
+    return { data: null, error: { message: error.message || 'Failed to check approval status' } }
+  }
 }
 

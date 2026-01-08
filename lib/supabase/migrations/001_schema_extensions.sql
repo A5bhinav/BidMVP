@@ -54,9 +54,10 @@ ALTER TABLE event
 ADD COLUMN IF NOT EXISTS location TEXT;
 
 -- Add geocoded coordinates cache for location (for automatic check-out)
+-- NUMERIC(11, 8) allows for 3 digits before decimal (for -180 longitude) + 8 decimal places
 ALTER TABLE event 
-ADD COLUMN IF NOT EXISTS location_lat NUMERIC(10, 8),
-ADD COLUMN IF NOT EXISTS location_lng NUMERIC(10, 8);
+ADD COLUMN IF NOT EXISTS location_lat NUMERIC(11, 8),
+ADD COLUMN IF NOT EXISTS location_lng NUMERIC(11, 8);
 
 -- Add index for location coordinate queries
 CREATE INDEX IF NOT EXISTS idx_event_location_coords 
@@ -66,6 +67,13 @@ WHERE location_lat IS NOT NULL AND location_lng IS NOT NULL;
 -- Add line_skip_price field (optional)
 ALTER TABLE event 
 ADD COLUMN IF NOT EXISTS line_skip_price NUMERIC(10, 2);
+
+-- Add max_bids field (optional - NULL means unlimited)
+ALTER TABLE event 
+ADD COLUMN IF NOT EXISTS max_bids INTEGER CHECK (max_bids IS NULL OR max_bids > 0);
+
+-- Add comment explaining max_bids
+COMMENT ON COLUMN event.max_bids IS 'Maximum number of bids that can be sold for this event. NULL means unlimited.';
 
 -- Add updated_at column for tracking when events are modified
 ALTER TABLE event 
@@ -126,8 +134,8 @@ ADD COLUMN IF NOT EXISTS entry_method TEXT CHECK (entry_method IN ('approved', '
 
 -- Add location tracking columns for geolocation-based automatic check-out
 ALTER TABLE checkin 
-ADD COLUMN IF NOT EXISTS last_location_lat NUMERIC(10, 8),
-ADD COLUMN IF NOT EXISTS last_location_lng NUMERIC(10, 8),
+ADD COLUMN IF NOT EXISTS last_location_lat NUMERIC(11, 8),
+ADD COLUMN IF NOT EXISTS last_location_lng NUMERIC(11, 8),
 ADD COLUMN IF NOT EXISTS last_location_at TIMESTAMP;
 
 -- Add index on is_checked_in for live attendee queries
@@ -164,10 +172,66 @@ FOR EACH ROW
 EXECUTE FUNCTION update_event_updated_at();
 
 -- ============================================
+-- 6. Fix location coordinates precision (if columns already exist with wrong precision)
+-- ============================================
+-- NUMERIC(10, 8) is too small for longitude values (-180 to 180)
+-- Update to NUMERIC(11, 8) to accommodate 3 digits before decimal (for -180) + 8 decimal places
+-- This section fixes columns that may have been created with NUMERIC(10, 8) in earlier migrations
+
+-- Fix location_lat and location_lng in event table (if they exist with wrong precision)
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'event' 
+    AND column_name = 'location_lat' 
+    AND data_type = 'numeric' 
+    AND numeric_precision = 10
+  ) THEN
+    ALTER TABLE event ALTER COLUMN location_lat TYPE NUMERIC(11, 8);
+  END IF;
+  
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'event' 
+    AND column_name = 'location_lng' 
+    AND data_type = 'numeric' 
+    AND numeric_precision = 10
+  ) THEN
+    ALTER TABLE event ALTER COLUMN location_lng TYPE NUMERIC(11, 8);
+  END IF;
+END $$;
+
+-- Fix last_location_lat and last_location_lng in checkin table (if they exist with wrong precision)
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'checkin' 
+    AND column_name = 'last_location_lat' 
+    AND data_type = 'numeric' 
+    AND numeric_precision = 10
+  ) THEN
+    ALTER TABLE checkin ALTER COLUMN last_location_lat TYPE NUMERIC(11, 8);
+  END IF;
+  
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'checkin' 
+    AND column_name = 'last_location_lng' 
+    AND data_type = 'numeric' 
+    AND numeric_precision = 10
+  ) THEN
+    ALTER TABLE checkin ALTER COLUMN last_location_lng TYPE NUMERIC(11, 8);
+  END IF;
+END $$;
+
+-- ============================================
 -- Comments for reference
 -- ============================================
 -- All columns are added with IF NOT EXISTS to prevent errors if run multiple times
 -- All new columns are nullable (except where defaults are set) to avoid breaking existing data
 -- Indexes are added for performance on commonly queried fields
 -- The updated_at trigger automatically updates the timestamp whenever an event is modified
+-- Location coordinates use NUMERIC(11, 8) to support longitude values from -180 to 180
 
