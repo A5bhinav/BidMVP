@@ -17,7 +17,8 @@ export default function BottomNavigation({ items, activePath }) {
       aria-label="Main navigation"
     >
       {items.map((item) => {
-        const isActive = !item.onClick && activePath === item.path
+        // Special case: Home path '/' should be active when on '/events' since home redirects to events
+        const isActive = !item.onClick && (activePath === item.path || (item.path === '/' && activePath === '/events'))
         const iconColor = isActive ? 'text-primary-ui' : 'text-gray-medium'
 
         // If onClick is provided, use button; otherwise use Link

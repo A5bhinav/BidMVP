@@ -50,9 +50,9 @@ export default function LayoutWrapper({ children }) {
     (userFraternities || []).some(f => f && f.role === 'admin' && f.fraternity)
 
   // Determine if navigation should be visible
-  // Show nav for authenticated users on main pages (home, friends, profile)
+  // Show nav for authenticated users on main pages (home, events, friends, profile)
   // Also show for non-admins on other pages (except excluded ones)
-  const isMainPage = pathname === '/' || pathname === '/friends' || pathname === '/profile'
+  const isMainPage = pathname === '/' || pathname === '/events' || pathname === '/friends' || pathname === '/profile'
   const shouldShowNav =
     !authLoading &&
     !fraternityLoading &&

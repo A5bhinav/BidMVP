@@ -67,7 +67,7 @@ export default function EventFilters({ filters, onChange }) {
   const hasActiveFilters = filters.event_type !== null || filters.visibility !== null || filters.rush_only
 
   return (
-    <div className="bg-white border-b border-gray-light sticky top-0 z-10">
+    <div className="bg-white border-b border-gray-light sticky top-[73px] z-10">
       <div className="px-4 py-3 space-y-3">
         {/* Event Type Filter - Horizontal Scrollable Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
