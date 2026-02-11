@@ -204,7 +204,7 @@
 **Files:**
 - `app/events/[id]/guests/page.js` - Guest list management page
 - `components/GuestList.js` - Guest list table/display
-- `components/RequestCard.js` - Request approval card (shows user photo, name, safety tier)
+- `components/RequestCard.js` - Request approval card (shows user photo, name)
 - `components/LineSkipButton.js` - Paid line skip UI
 - `components/ManualAddGuest.js` - Manual add form
 
@@ -251,13 +251,13 @@
 
 ### Backend (Abhinav)
 **Files:**
-- `lib/supabase/events.js` - getCampusEvents, filterEvents (by type, visibility, rush-only)
+- `lib/supabase/events.js` - getCampusEvents, filterEvents (by type, visibility)
 - `lib/mocks/eventFeedData.js` - Mock event feed data
 
 **Deliverables:**
 - Event query functions
 - Filtering logic
-- Visibility rules (public, invite-only, rush-only)
+- Visibility rules (public, invite-only)
 
 ### Frontend (Andrew)
 **Files:**
@@ -308,221 +308,9 @@
 
 ---
 
-# PHASE 2: SAFETY & REPUTATION
+# PHASE 2: LIVE EVENT DASHBOARD
 
-## 2.1 Upvote/Downvote System
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/interactions.js` - createInteraction, getInteractions, checkDuplicateInteraction
-- `lib/mocks/interactionData.js` - Mock interaction data
-
-**Deliverables:**
-- Interaction creation (upvote/downvote)
-- Duplicate prevention
-- Query functions
-
-### Frontend (Andrew)
-**Files:**
-- `components/InteractionModal.js` - Post-event feedback popup
-- `components/ProfileInteractionButton.js` - Tap profile to upvote/downvote
-- `components/InteractionList.js` - List of attendees for feedback
-
-**Deliverables:**
-- Post-event feedback UI
-- Profile interaction UI
-- Smooth UX flow
-
-**Integration Checkpoint:** Upvote/downvote system working
-
----
-
-## 2.2 Safety Score Calculation
-
-### Backend (Abhinav)
-**Files:**
-- `lib/safety/calculator.js` - calculateSafetyScore (already in database, but may need client helpers)
-- `lib/supabase/safety.js` - getSafetyTier, getSafetyScore (host-only queries)
-- Database functions already created in Phase 0.1
-
-**Deliverables:**
-- Safety score query functions
-- Tier retrieval functions
-- Host-only access enforcement
-
-### Frontend (Andrew)
-**Files:**
-- `components/SafetyBadge.js` - Color-coded tier badge (green/yellow/red)
-- `components/SafetyTooltip.js` - Hover tooltip explaining tiers
-- Update `components/GuestList.js` - Show safety tier badges
-- Update `components/RequestCard.js` - Show safety tier
-
-**Deliverables:**
-- Safety tier visualization
-- Host-facing safety UI
-- Clear visual indicators
-
-**Integration Checkpoint:** Safety scores displaying correctly for hosts
-
----
-
-## 2.3 Reporting System
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/reports.js` - createReport, getReports, checkReportCooldown
-- `lib/safety/cooldown.js` - Cooldown logic (max 2 per week)
-- `lib/mocks/reportData.js` - Mock report data
-
-**Deliverables:**
-- Report creation
-- Cooldown enforcement
-- Report query functions
-
-### Frontend (Andrew)
-**Files:**
-- `components/ReportModal.js` - Report form with categories
-- `components/ReportWarning.js` - Warning screen about false reporting
-- `components/ReportCooldown.js` - Cooldown indicator
-
-**Deliverables:**
-- Report flow UI
-- Warning screens
-- Cooldown display
-
-**Integration Checkpoint:** Reporting system working with cooldown
-
----
-
-## 2.4 Safety UI for Hosts
-
-### Backend (Abhinav)
-**Files:**
-- Already covered in 2.2, may need additional query helpers
-
-### Frontend (Andrew)
-**Files:**
-- Enhance safety badges and tooltips
-- Safety tier filtering in guest lists
-- Safety alerts UI
-
-**Integration Checkpoint:** Complete safety UI for hosts
-
----
-
-# PHASE 3: RUSH OS
-
-## 3.1 Rushing Toggle
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/users.js` - updateRushingStatus (add to existing file)
-- Simple function to toggle rushing boolean
-
-**Deliverables:**
-- Rushing toggle function
-
-### Frontend (Andrew)
-**Files:**
-- Update `components/ProfileForm.js` - Add rushing toggle switch
-- Update `app/profile/page.js` - Include rushing toggle
-
-**Deliverables:**
-- Rushing toggle UI in profile
-
-**Integration Checkpoint:** Rushing toggle working
-
----
-
-## 3.2 PNM List
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/rush.js` - getPNMList, filterPNMs (by safety tier, events attended)
-- `lib/mocks/pnmData.js` - Mock PNM data
-
-**Deliverables:**
-- PNM query functions
-- Filtering logic
-- Frat-only access enforcement
-
-### Frontend (Andrew)
-**Files:**
-- `app/fraternities/[id]/rush/pnms/page.js` - PNM list view
-- `components/PNMCard.js` - PNM profile card
-- `components/PNMFilters.js` - Filter UI (safety tier, attendance)
-
-**Deliverables:**
-- PNM list UI
-- Filtering UI
-- PNM cards with all info
-
-**Integration Checkpoint:** PNM list displaying correctly
-
----
-
-## 3.3 Rush Event Tools
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/rush.js` - createRushNote, getRushNotes, getPNMAttendance
-- `lib/supabase/rush.js` - getEngagementAnalytics (attendance tracking)
-- `lib/mocks/rushData.js` - Mock rush notes and analytics
-
-**Deliverables:**
-- Rush notes CRUD
-- Attendance tracking
-- Engagement analytics queries
-
-### Frontend (Andrew)
-**Files:**
-- `app/fraternities/[id]/rush/events/page.js` - Rush events list
-- `app/fraternities/[id]/rush/events/[eventId]/page.js` - Rush event dashboard
-- `components/RushNotesPanel.js` - Notes input component
-- `components/PNMAttendanceCard.js` - Attendance tracking display
-- `components/EngagementIndicator.js` - Rising/falling interest indicator
-
-**Deliverables:**
-- Rush event management UI
-- Notes panel
-- Attendance tracking UI
-- Analytics display
-
-**Integration Checkpoint:** Rush event tools working
-
----
-
-## 3.4 Funnel Analytics
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/analytics.js` - getRushFunnel, getEngagementRankings, getDropOffPoints
-- `lib/mocks/analyticsData.js` - Mock analytics data
-
-**Deliverables:**
-- Analytics query functions
-- Funnel calculations
-- Engagement metrics
-
-### Frontend (Andrew)
-**Files:**
-- `app/fraternities/[id]/rush/analytics/page.js` - Analytics dashboard
-- `components/RushFunnelChart.js` - Funnel visualization (use recharts)
-- `components/EngagementChart.js` - Engagement over time chart
-- `components/TopPNMsList.js` - Engagement rankings
-
-**Deliverables:**
-- Analytics dashboard UI
-- Charts and visualizations
-- Rankings display
-
-**Integration Checkpoint:** Analytics dashboard working
-
----
-
-# PHASE 4: LIVE EVENT DASHBOARD
-
-## 4.1 Live Ratio Tracking
+## 2.1 Live Ratio Tracking
 
 ### Backend (Abhinav)
 **Files:**
@@ -552,7 +340,7 @@
 
 ---
 
-## 4.2 Capacity Warnings
+## 2.2 Capacity Warnings
 
 ### Backend (Abhinav)
 **Files:**
@@ -578,32 +366,7 @@
 
 ---
 
-## 4.3 Flagged User Alerts
-
-### Backend (Abhinav)
-**Files:**
-- `lib/supabase/checkin.js` - checkSafetyTierOnCheckIn (enhance existing)
-- `lib/supabase/safety.js` - getSafetyTier (already exists)
-
-**Deliverables:**
-- Safety tier check on check-in
-- Alert generation for RED users
-
-### Frontend (Andrew)
-**Files:**
-- `components/SafetyAlert.js` - Alert banner for flagged users
-- Update check-in flow to show alerts
-- Host accept/deny UI for flagged users
-
-**Deliverables:**
-- Safety alert UI
-- Host decision flow
-
-**Integration Checkpoint:** Flagged user alerts working
-
----
-
-## 4.4 Revenue Dashboard
+## 2.3 Revenue Dashboard
 
 ### Backend (Abhinav)
 **Files:**
@@ -631,7 +394,7 @@
 
 ---
 
-## 4.5 Risk Chair Tools
+## 2.4 Risk Chair Tools
 
 ### Backend (Abhinav)
 **Files:**
@@ -759,26 +522,13 @@ CHECKPOINT [Phase].[Feature] - [Backend/Frontend]
 - 1.4: Event Feed (Week 4-5)
 - 1.5: Chat System (Week 5)
 
-## Phase 2: Safety & Reputation (Weeks 6-7)
-- 2.1: Upvote/Downvote (Week 6)
-- 2.2: Safety Score (Week 6)
-- 2.3: Reporting (Week 7)
-- 2.4: Safety UI (Week 7)
+## Phase 2: Live Dashboard (Weeks 6-7)
+- 2.1: Live Ratio (Week 6)
+- 2.2: Capacity Warnings (Week 6)
+- 2.3: Revenue Dashboard (Week 7)
+- 2.4: Risk Chair Tools (Week 7)
 
-## Phase 3: Rush OS (Weeks 8-9)
-- 3.1: Rushing Toggle (Week 8)
-- 3.2: PNM List (Week 8)
-- 3.3: Rush Events (Week 9)
-- 3.4: Analytics (Week 9)
-
-## Phase 4: Live Dashboard (Weeks 10-11)
-- 4.1: Live Ratio (Week 10)
-- 4.2: Capacity Warnings (Week 10)
-- 4.3: Flagged Alerts (Week 11)
-- 4.4: Revenue Dashboard (Week 11)
-- 4.5: Risk Chair Tools (Week 11)
-
-**Total: ~11 weeks for complete MVP**
+**Total: ~7 weeks for complete MVP**
 
 ---
 
@@ -795,16 +545,6 @@ CHECKPOINT [Phase].[Feature] - [Backend/Frontend]
 - Chat system operational
 
 ## Phase 2 Completion
-- Safety scores calculating correctly
-- Reporting system preventing abuse
-- Hosts can filter by safety tier
-
-## Phase 3 Completion
-- Rush chairs managing PNMs effectively
-- Analytics providing insights
-- Rush events tracked end-to-end
-
-## Phase 4 Completion
 - Live dashboard operational during events
 - Risk chairs monitoring in real-time
 - Revenue tracking accurate
