@@ -52,8 +52,12 @@ export function ChatProvider({ children }) {
   const [loading, setLoading] = useState(false) // Initial loading state - start as false to not block navigation
   const [error, setError] = useState(null) // Error message
 
-  // Refs to track subscriptions
+  // Refs to track subscriptions and prevent infinite re-subscription loops
   const subscriptionsRef = useRef(new Map()) // Map<channelName, channel>
+  const prevConversationIdsRef = useRef([]) // Track previous conversation IDs to detect actual changes
+  const activeConversationRef = useRef(null) // Ref for activeConversation to avoid subscription dep
+  const markAsReadRef = useRef(null) // Ref for markAsRead to avoid subscription dep
+  const refreshUnreadCountRef = useRef(null) // Ref for refreshUnreadCount to avoid subscription dep
 
   // Fetch conversations
   const fetchConversations = useCallback(async () => {
@@ -333,63 +337,129 @@ export function ChatProvider({ children }) {
     }
   }, [user?.id])
 
-  // Set up real-time subscriptions
+  // Keep refs in sync with latest values (avoids stale closures in subscriptions)
+  useEffect(() => { activeConversationRef.current = activeConversation }, [activeConversation])
+  useEffect(() => { markAsReadRef.current = markAsRead }, [markAsRead])
+  useEffect(() => { refreshUnreadCountRef.current = refreshUnreadCount }, [refreshUnreadCount])
+
+  // Set up real-time subscriptions for conversations channel and message requests
+  // This effect only depends on user.id and authLoading — NOT on conversations state
   useEffect(() => {
     if (authLoading || !user?.id) {
       // Clean up all subscriptions
+      const supabase = createClient()
       subscriptionsRef.current.forEach((channel) => {
-        const supabase = createClient()
         supabase.removeChannel(channel)
       })
       subscriptionsRef.current.clear()
+      prevConversationIdsRef.current = []
       return
     }
 
     const supabase = createClient()
 
-    // Subscribe to conversations updates
-    const conversationsChannel = supabase
-      .channel(`conversations-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'conversations',
-          filter: `user1_id=eq.${user.id} OR user2_id=eq.${user.id}`
-        },
-        (payload) => {
-          // Update conversation in list
-          setConversations(prev => prev.map(conv => 
-            conv.id === payload.new.id ? { ...conv, ...payload.new } : conv
-          ))
-        }
-      )
-      .subscribe()
+    // Subscribe to conversations updates (only once per user session)
+    if (!subscriptionsRef.current.has('conversations')) {
+      const conversationsChannel = supabase
+        .channel(`conversations-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'conversations',
+            filter: `user1_id=eq.${user.id} OR user2_id=eq.${user.id}`
+          },
+          (payload) => {
+            setConversations(prev => prev.map(conv => 
+              conv.id === payload.new.id ? { ...conv, ...payload.new } : conv
+            ))
+          }
+        )
+        .subscribe()
 
-    subscriptionsRef.current.set('conversations', conversationsChannel)
+      subscriptionsRef.current.set('conversations', conversationsChannel)
+    }
 
-    // Subscribe to messages for all user's conversations
-    // Supabase Realtime doesn't support .in() filters, so we subscribe to each conversation
-    // But we use a single channel with multiple filters to avoid creating too many channels
-    const conversationIds = conversations.map(c => c.id)
-    
-    // Clean up old message subscriptions
-    const oldMessageChannels = Array.from(subscriptionsRef.current.keys())
-      .filter(key => key.startsWith('messages-') && key !== 'messages')
-    oldMessageChannels.forEach(key => {
-      const channel = subscriptionsRef.current.get(key)
+    // Subscribe to message requests (only once per user session)
+    if (!subscriptionsRef.current.has('message-requests')) {
+      const messageRequestsChannel = supabase
+        .channel(`message-requests-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'message_requests'
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setMessageRequests(prev => {
+                if (prev.some(r => r.id === payload.new.id)) return prev
+                return [...prev, payload.new]
+              })
+            } else if (payload.eventType === 'UPDATE') {
+              setMessageRequests(prev => prev.map(req => 
+                req.id === payload.new.id ? payload.new : req
+              ))
+            } else if (payload.eventType === 'DELETE') {
+              setMessageRequests(prev => prev.filter(req => req.id !== payload.old.id))
+            }
+          }
+        )
+        .subscribe()
+
+      subscriptionsRef.current.set('message-requests', messageRequestsChannel)
+    }
+
+    return () => {
+      const supabaseCleanup = createClient()
+      subscriptionsRef.current.forEach((channel) => {
+        supabaseCleanup.removeChannel(channel)
+      })
+      subscriptionsRef.current.clear()
+      prevConversationIdsRef.current = []
+    }
+  }, [user?.id, authLoading])
+
+  // Subscribe to per-conversation message channels
+  // Only re-runs when the SET of conversation IDs actually changes (not on every state update)
+  useEffect(() => {
+    if (authLoading || !user?.id) return
+
+    const currentIds = conversations.map(c => c.id).sort()
+    const prevIds = prevConversationIdsRef.current
+
+    // Check if conversation IDs actually changed
+    const idsChanged = currentIds.length !== prevIds.length ||
+      currentIds.some((id, i) => id !== prevIds[i])
+
+    if (!idsChanged) return
+
+    // Find new conversation IDs that need subscriptions
+    const prevIdsSet = new Set(prevIds)
+    const newIds = currentIds.filter(id => !prevIdsSet.has(id))
+
+    // Find removed conversation IDs that need cleanup
+    const currentIdsSet = new Set(currentIds)
+    const removedIds = prevIds.filter(id => !currentIdsSet.has(id))
+
+    const supabase = createClient()
+
+    // Clean up removed conversation subscriptions
+    removedIds.forEach(id => {
+      const channelName = `messages-${id}`
+      const channel = subscriptionsRef.current.get(channelName)
       if (channel) {
         supabase.removeChannel(channel)
-        subscriptionsRef.current.delete(key)
+        subscriptionsRef.current.delete(channelName)
       }
     })
 
-    // Subscribe to messages for each conversation individually
-    // This is necessary because Supabase Realtime doesn't support .in() filters
-    conversationIds.forEach(conversationId => {
+    // Subscribe to new conversations
+    newIds.forEach(conversationId => {
       const channelName = `messages-${conversationId}`
-      if (subscriptionsRef.current.has(channelName)) return // Already subscribed
+      if (subscriptionsRef.current.has(channelName)) return
 
       const messagesChannel = supabase
         .channel(channelName)
@@ -402,11 +472,10 @@ export function ChatProvider({ children }) {
             filter: `conversation_id=eq.${conversationId}`
           },
           (payload) => {
-            // Add new message
+            // Add new message (uses functional state update to avoid stale closure)
             setMessages(prev => {
               const newMap = new Map(prev)
               const existing = newMap.get(conversationId) || []
-              // Check if message already exists (avoid duplicates)
               if (existing.some(m => m.id === payload.new.id)) return prev
               newMap.set(conversationId, [...existing, payload.new])
               return newMap
@@ -419,13 +488,13 @@ export function ChatProvider({ children }) {
                 : conv
             ))
 
-            // Mark as read if this is the active conversation
-            if (activeConversation === conversationId && payload.new.sender_id !== user.id) {
-              markAsRead(conversationId)
+            // Mark as read if this is the active conversation (use ref to avoid stale closure)
+            if (activeConversationRef.current === conversationId && payload.new.sender_id !== user.id) {
+              markAsReadRef.current?.(conversationId)
             }
 
-            // Refresh unread count
-            refreshUnreadCount()
+            // Refresh unread count (use ref to avoid stale closure)
+            refreshUnreadCountRef.current?.()
           }
         )
         .subscribe()
@@ -433,51 +502,9 @@ export function ChatProvider({ children }) {
       subscriptionsRef.current.set(channelName, messagesChannel)
     })
 
-    // Subscribe to message requests
-    // Subscribe to requests where user is requester OR recipient
-    const messageRequestsChannel = supabase
-      .channel(`message-requests-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'message_requests'
-        },
-        (payload) => {
-          // Check if this request is relevant to the user
-          // We need to check if the conversation belongs to the user
-          const conversationId = payload.new?.conversation_id || payload.old?.conversation_id
-          const isRelevant = conversations.some(c => c.id === conversationId)
-          
-          if (!isRelevant) return
-
-          if (payload.eventType === 'INSERT') {
-            setMessageRequests(prev => {
-              if (prev.some(r => r.id === payload.new.id)) return prev
-              return [...prev, payload.new]
-            })
-          } else if (payload.eventType === 'UPDATE') {
-            setMessageRequests(prev => prev.map(req => 
-              req.id === payload.new.id ? payload.new : req
-            ))
-          } else if (payload.eventType === 'DELETE') {
-            setMessageRequests(prev => prev.filter(req => req.id !== payload.old.id))
-          }
-        }
-      )
-      .subscribe()
-
-    subscriptionsRef.current.set('message-requests', messageRequestsChannel)
-
-    return () => {
-      // Cleanup all subscriptions
-      subscriptionsRef.current.forEach((channel) => {
-        supabase.removeChannel(channel)
-      })
-      subscriptionsRef.current.clear()
-    }
-  }, [user?.id, authLoading, conversations, activeConversation, markAsRead, refreshUnreadCount])
+    // Update ref to track current IDs
+    prevConversationIdsRef.current = currentIds
+  }, [user?.id, authLoading, conversations])
 
   // Load initial data when user is authenticated
   useEffect(() => {

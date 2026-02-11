@@ -3,16 +3,14 @@
 
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getCampusEventsAction } from '@/app/actions/events'
-import EventCard from '@/components/EventCard'
+import EventFeed from '@/components/EventFeed'
 import EventFilters from '@/components/EventFilters'
 import Card from '@/components/ui/Card'
-import Button from '@/components/ui/Button'
-import { EventCardSkeleton } from '@/components/ui/Skeleton'
 
 // Dynamically import PaymentSuccessModal - only shown conditionally
 const PaymentSuccessModal = dynamic(() => import('@/components/PaymentSuccessModal'), {
@@ -142,68 +140,13 @@ export default function EventsPage() {
 
       {/* Content Area with bottom padding for navigation */}
       <div className="px-4 py-4 pb-[calc(3.5rem+max(0.5rem,env(safe-area-inset-bottom)))]">
-        {/* Error State */}
-        {error && (
-          <Card className="mb-4 p-6 text-center bg-red-50 border-red-200">
-            <p className="text-bodySmall text-red-600 mb-4">{error.message}</p>
-            {error.type === 'no_school' && (
-              <Button
-                variant="primary"
-                size="medium"
-                onClick={() => router.push('/profile')}
-                className="w-full"
-              >
-                Complete Profile
-              </Button>
-            )}
-            {error.type !== 'no_school' && (
-              <Button
-                variant="primary"
-                size="medium"
-                onClick={loadEvents}
-                className="w-full"
-              >
-                Retry
-              </Button>
-            )}
-          </Card>
-        )}
-
-        {/* Loading State */}
-        {loading && !error && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <EventCardSkeleton />
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && !error && events.length === 0 && (
-          <Card className="p-8 text-center">
-            <p className="text-bodySmall text-gray-medium mb-4">
-              No events found
-            </p>
-            <p className="text-bodySmall text-gray-medium">
-              Check back later for upcoming events at your campus!
-            </p>
-          </Card>
-        )}
-
-        {/* Events List */}
-        {!loading && !error && events.length > 0 && (
-          <div className="space-y-4">
-            {events.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                variant="default"
-              />
-            ))}
-          </div>
-        )}
+        <EventFeed
+          events={events}
+          loading={loading}
+          error={error}
+          onRetry={loadEvents}
+          onCompleteProfile={() => router.push('/profile')}
+        />
       </div>
 
       {/* Payment Success Modal */}

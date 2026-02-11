@@ -58,6 +58,21 @@ export function FriendProvider({ children }) {
   // Ref to track subscription cleanup
   const unsubscribeRef = useRef(null)
 
+  // Refs for current state values to avoid stale closures in useCallback
+  // This prevents re-creating callbacks when state changes, reducing re-renders
+  const sentRequestsRef = useRef(sentRequests)
+  const suggestionsRef = useRef(suggestions)
+  const friendsRef = useRef(friends)
+  const receivedRequestsRef = useRef(receivedRequests)
+  const friendshipStatusesRef = useRef(friendshipStatuses)
+
+  // Keep refs in sync with state
+  useEffect(() => { sentRequestsRef.current = sentRequests }, [sentRequests])
+  useEffect(() => { suggestionsRef.current = suggestions }, [suggestions])
+  useEffect(() => { friendsRef.current = friends }, [friends])
+  useEffect(() => { receivedRequestsRef.current = receivedRequests }, [receivedRequests])
+  useEffect(() => { friendshipStatusesRef.current = friendshipStatuses }, [friendshipStatuses])
+
   // Fetch friends list
   const refreshFriends = useCallback(async () => {
     if (!user?.id) {
@@ -230,24 +245,26 @@ export function FriendProvider({ children }) {
   }, [user?.id, friendshipStatuses])
 
   // Send friend request with optimistic update
+  // Uses refs for rollback state to avoid re-creating this callback on every state change
   const sendFriendRequest = useCallback(async (friendId) => {
     if (!user?.id || !friendId) return
 
-    // Save previous state for rollback
+    // Save previous state for rollback (read from refs, not state)
     const previousState = {
-      sentRequests: [...sentRequests],
-      suggestions: [...suggestions],
-      friendshipStatuses: new Map(friendshipStatuses)
+      sentRequests: [...sentRequestsRef.current],
+      suggestions: [...suggestionsRef.current],
+      friendshipStatuses: new Map(friendshipStatusesRef.current)
     }
 
     // Optimistic update: Add to sent requests immediately
+    const currentSuggestions = suggestionsRef.current
     const optimisticRequest = {
       id: `temp-${Date.now()}`,
       user: {
         id: friendId,
-        name: suggestions.find(s => s.id === friendId)?.name || null,
-        profile_pic: suggestions.find(s => s.id === friendId)?.profile_pic || null,
-        year: suggestions.find(s => s.id === friendId)?.year || null
+        name: currentSuggestions.find(s => s.id === friendId)?.name || null,
+        profile_pic: currentSuggestions.find(s => s.id === friendId)?.profile_pic || null,
+        year: currentSuggestions.find(s => s.id === friendId)?.year || null
       },
       created_at: new Date().toISOString()
     }
@@ -270,7 +287,6 @@ export function FriendProvider({ children }) {
         setFriendshipStatuses(previousState.friendshipStatuses)
         setError(requestError.message || 'Failed to send friend request')
       }
-      // On success, real-time subscription will update with actual data
     } catch (err) {
       // Rollback on error
       setSentRequests(previousState.sentRequests)
@@ -278,21 +294,21 @@ export function FriendProvider({ children }) {
       setFriendshipStatuses(previousState.friendshipStatuses)
       setError(err.message || 'Failed to send friend request')
     }
-  }, [user?.id, sentRequests, suggestions, friendshipStatuses])
+  }, [user?.id])
 
   // Accept friend request with optimistic update
   const acceptFriendRequest = useCallback(async (friendId) => {
     if (!user?.id || !friendId) return
 
-    // Find the request
-    const request = receivedRequests.find(r => r.user?.id === friendId)
+    // Find the request (read from ref)
+    const request = receivedRequestsRef.current.find(r => r.user?.id === friendId)
     if (!request) return
 
-    // Save previous state for rollback
+    // Save previous state for rollback (read from refs)
     const previousState = {
-      receivedRequests: [...receivedRequests],
-      friends: [...friends],
-      friendshipStatuses: new Map(friendshipStatuses)
+      receivedRequests: [...receivedRequestsRef.current],
+      friends: [...friendsRef.current],
+      friendshipStatuses: new Map(friendshipStatusesRef.current)
     }
 
     // Optimistic update: Remove from received requests, add to friends
@@ -324,7 +340,6 @@ export function FriendProvider({ children }) {
         setFriendshipStatuses(previousState.friendshipStatuses)
         setError(acceptError.message || 'Failed to accept friend request')
       }
-      // On success, real-time subscription will update with actual data
     } catch (err) {
       // Rollback on error
       setReceivedRequests(previousState.receivedRequests)
@@ -332,16 +347,16 @@ export function FriendProvider({ children }) {
       setFriendshipStatuses(previousState.friendshipStatuses)
       setError(err.message || 'Failed to accept friend request')
     }
-  }, [user?.id, receivedRequests, friends, friendshipStatuses])
+  }, [user?.id])
 
   // Decline friend request with optimistic update
   const declineFriendRequest = useCallback(async (friendId) => {
     if (!user?.id || !friendId) return
 
-    // Save previous state for rollback
+    // Save previous state for rollback (read from refs)
     const previousState = {
-      receivedRequests: [...receivedRequests],
-      friendshipStatuses: new Map(friendshipStatuses)
+      receivedRequests: [...receivedRequestsRef.current],
+      friendshipStatuses: new Map(friendshipStatusesRef.current)
     }
 
     // Optimistic update: Remove from received requests
@@ -356,28 +371,25 @@ export function FriendProvider({ children }) {
       const { error: declineError } = await declineFriendRequestAction(friendId)
       
       if (declineError) {
-        // Rollback on error
-        setReceivedRequests(previousState.receivedRequests)
+        setSentRequests(previousState.receivedRequests)
         setFriendshipStatuses(previousState.friendshipStatuses)
         setError(declineError.message || 'Failed to decline friend request')
       }
-      // On success, real-time subscription will confirm
     } catch (err) {
-      // Rollback on error
       setReceivedRequests(previousState.receivedRequests)
       setFriendshipStatuses(previousState.friendshipStatuses)
       setError(err.message || 'Failed to decline friend request')
     }
-  }, [user?.id, receivedRequests, friendshipStatuses])
+  }, [user?.id])
 
   // Cancel friend request with optimistic update
   const cancelFriendRequest = useCallback(async (friendId) => {
     if (!user?.id || !friendId) return
 
-    // Save previous state for rollback
+    // Save previous state for rollback (read from refs)
     const previousState = {
-      sentRequests: [...sentRequests],
-      friendshipStatuses: new Map(friendshipStatuses)
+      sentRequests: [...sentRequestsRef.current],
+      friendshipStatuses: new Map(friendshipStatusesRef.current)
     }
 
     // Optimistic update: Remove from sent requests
@@ -392,28 +404,25 @@ export function FriendProvider({ children }) {
       const { error: cancelError } = await cancelFriendRequestAction(friendId)
       
       if (cancelError) {
-        // Rollback on error
         setSentRequests(previousState.sentRequests)
         setFriendshipStatuses(previousState.friendshipStatuses)
         setError(cancelError.message || 'Failed to cancel friend request')
       }
-      // On success, real-time subscription will confirm
     } catch (err) {
-      // Rollback on error
       setSentRequests(previousState.sentRequests)
       setFriendshipStatuses(previousState.friendshipStatuses)
       setError(err.message || 'Failed to cancel friend request')
     }
-  }, [user?.id, sentRequests, friendshipStatuses])
+  }, [user?.id])
 
   // Remove friend with optimistic update
   const removeFriend = useCallback(async (friendId) => {
     if (!user?.id || !friendId) return
 
-    // Save previous state for rollback
+    // Save previous state for rollback (read from refs)
     const previousState = {
-      friends: [...friends],
-      friendshipStatuses: new Map(friendshipStatuses)
+      friends: [...friendsRef.current],
+      friendshipStatuses: new Map(friendshipStatusesRef.current)
     }
 
     // Optimistic update: Remove from friends
@@ -428,19 +437,16 @@ export function FriendProvider({ children }) {
       const { error: removeError } = await removeFriendAction(friendId)
       
       if (removeError) {
-        // Rollback on error
         setFriends(previousState.friends)
         setFriendshipStatuses(previousState.friendshipStatuses)
         setError(removeError.message || 'Failed to remove friend')
       }
-      // On success, real-time subscription will confirm
     } catch (err) {
-      // Rollback on error
       setFriends(previousState.friends)
       setFriendshipStatuses(previousState.friendshipStatuses)
       setError(err.message || 'Failed to remove friend')
     }
-  }, [user?.id, friends, friendshipStatuses])
+  }, [user?.id])
 
   // Handle real-time friendship changes
   const handleFriendshipChange = useCallback(async (event) => {
