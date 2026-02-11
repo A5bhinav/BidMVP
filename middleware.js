@@ -20,7 +20,7 @@ export const config = {
     // - favicon.ico (site icon)
     // - Image files (.svg, .png, .jpg, etc.)
     // This regex pattern excludes those paths to avoid unnecessary processing
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
 

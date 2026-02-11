@@ -1,14 +1,18 @@
 // app/api/stripe/webhook/route.js
 // Stripe webhook handler for payment confirmation
-// Handles checkout.session.completed events for line skip and bid purchases
+// Handles checkout.session.completed and checkout.session.expired events
+//
+// IMPORTANT: This endpoint receives server-to-server calls from Stripe.
+// There are no cookies, no user session — we use the admin Supabase client.
+// We ALWAYS return 200 after successful signature verification to prevent retries.
 
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { recordLineSkip, recordBidPurchase } from '@/lib/supabase/revenue'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
-// Initialize Stripe - will be created in POST handler to handle missing env var gracefully
+// Singleton Stripe instance
 let stripe = null
 
 function getStripe() {
@@ -24,6 +28,9 @@ function getStripe() {
 }
 
 export async function POST(request) {
+  let event
+
+  // --- 1. Verify the webhook signature ---
   try {
     const stripeInstance = getStripe()
     const body = await request.text()
@@ -34,11 +41,9 @@ export async function POST(request) {
     }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error('STRIPE_WEBHOOK_SECRET environment variable is not set')
+      console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET is not set')
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
     }
-
-    let event
 
     try {
       event = stripeInstance.webhooks.constructEvent(
@@ -47,42 +52,177 @@ export async function POST(request) {
         process.env.STRIPE_WEBHOOK_SECRET
       )
     } catch (err) {
-      console.error('Webhook signature verification failed:', err.message)
+      console.error('[stripe-webhook] Signature verification failed:', err.message)
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
+  } catch (error) {
+    console.error('[stripe-webhook] Setup error:', error.message)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object
-      const { eventId, userId, type } = session.metadata
+  // --- 2. Signature is valid. From here, ALWAYS return 200. ---
+  // Stripe considers non-2xx as a failure and will retry up to 16 times.
+  // We've verified this is a real Stripe event, so we should never ask for a retry.
 
-      if (!eventId || !userId || !type) {
-        console.error('Missing metadata in checkout session:', session.id)
-        return NextResponse.json({ error: 'Missing metadata' }, { status: 400 })
+  console.log(`[stripe-webhook] Received event: ${event.id} type=${event.type}`)
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        await handleCheckoutCompleted(event)
+        break
       }
 
-      const amount = session.amount_total / 100 // Convert cents to dollars
+      case 'checkout.session.expired': {
+        const session = event.data.object
+        console.log(`[stripe-webhook] Session expired: ${session.id}`, {
+          eventId: session.metadata?.eventId,
+          userId: session.metadata?.userId,
+          type: session.metadata?.type,
+        })
+        // No DB action needed — the user abandoned checkout
+        break
+      }
 
-      try {
-        if (type === 'line_skip') {
-          // For line skip, adminUserId is not needed for webhook (pass null)
-          // The recordLineSkip function will handle validation
-          await recordLineSkip(eventId, userId, amount, session.id, null)
-        } else if (type === 'bid') {
-          await recordBidPurchase(eventId, userId, amount, session.id)
-        } else {
-          console.error('Unknown payment type:', type)
-          return NextResponse.json({ error: 'Unknown payment type' }, { status: 400 })
-        }
-      } catch (error) {
-        console.error('Error recording payment:', error)
-        return NextResponse.json({ error: 'Failed to record payment' }, { status: 500 })
+      default: {
+        console.log(`[stripe-webhook] Unhandled event type: ${event.type}`)
+        break
       }
     }
-
-    return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook handler error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Log the error but still return 200 — we don't want Stripe to retry
+    // because the same event will likely fail the same way
+    console.error(`[stripe-webhook] Error processing event ${event.id}:`, error.message)
+  }
+
+  return NextResponse.json({ received: true })
+}
+
+/**
+ * Handle a completed checkout session.
+ * Records the payment in the event_revenue table and auto-approves bid purchases.
+ */
+async function handleCheckoutCompleted(event) {
+  const session = event.data.object
+  const { eventId, userId, type } = session.metadata || {}
+
+  if (!eventId || !userId || !type) {
+    console.error(`[stripe-webhook] Missing metadata in session ${session.id}:`, {
+      eventId, userId, type,
+    })
+    return // Don't throw — we already logged it, and retrying won't add metadata
+  }
+
+  if (!['line_skip', 'bid'].includes(type)) {
+    console.error(`[stripe-webhook] Unknown payment type "${type}" in session ${session.id}`)
+    return
+  }
+
+  const amount = session.amount_total / 100 // Stripe amounts are in cents
+  const supabase = createAdminClient()
+
+  // --- Idempotency check ---
+  // Stripe may deliver the same event more than once. Check if we've already processed it.
+  const { data: existing, error: lookupError } = await supabase
+    .from('event_revenue')
+    .select('id')
+    .eq('stripe_session_id', session.id)
+    .maybeSingle()
+
+  if (lookupError) {
+    console.error(`[stripe-webhook] Idempotency lookup failed for session ${session.id}:`, lookupError.message)
+    // Continue anyway — worst case we get a unique constraint violation below
+  }
+
+  if (existing) {
+    console.log(`[stripe-webhook] Already recorded session ${session.id}, skipping`)
+    return
+  }
+
+  // --- Insert revenue record ---
+  const { data: revenue, error: insertError } = await supabase
+    .from('event_revenue')
+    .insert({
+      event_id: eventId,
+      user_id: userId,
+      type: type,
+      amount: amount,
+      stripe_session_id: session.id,
+    })
+    .select()
+    .single()
+
+  if (insertError) {
+    console.error(`[stripe-webhook] Failed to insert revenue for session ${session.id}:`, insertError.message)
+    return
+  }
+
+  console.log(`[stripe-webhook] Recorded ${type} payment: $${amount} for event ${eventId}, user ${userId}`)
+
+  // --- For bid purchases, auto-approve the event request ---
+  if (type === 'bid') {
+    await autoApproveBidRequest(supabase, eventId, userId, session.id)
   }
 }
 
+/**
+ * Auto-approve (or create+approve) an event request when a bid is purchased.
+ * Users who pay for bids should be automatically approved for the event.
+ */
+async function autoApproveBidRequest(supabase, eventId, userId, sessionId) {
+  try {
+    // Check if the event requires approval (non-public)
+    const { data: eventData, error: eventError } = await supabase
+      .from('event')
+      .select('id, visibility')
+      .eq('id', eventId)
+      .single()
+
+    if (eventError || !eventData) {
+      console.error(`[stripe-webhook] Could not find event ${eventId} for bid auto-approve`)
+      return
+    }
+
+    // Public events don't need request approval
+    if (eventData.visibility === 'public') {
+      return
+    }
+
+    // Check for existing request
+    const { data: existingRequest } = await supabase
+      .from('event_requests')
+      .select('id, status')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (existingRequest) {
+      if (existingRequest.status !== 'approved') {
+        await supabase
+          .from('event_requests')
+          .update({
+            status: 'approved',
+            responded_at: new Date().toISOString(),
+          })
+          .eq('id', existingRequest.id)
+
+        console.log(`[stripe-webhook] Auto-approved existing request for user ${userId} on event ${eventId}`)
+      }
+    } else {
+      await supabase
+        .from('event_requests')
+        .insert({
+          event_id: eventId,
+          user_id: userId,
+          status: 'approved',
+          requested_at: new Date().toISOString(),
+          responded_at: new Date().toISOString(),
+        })
+
+      console.log(`[stripe-webhook] Created auto-approved request for user ${userId} on event ${eventId}`)
+    }
+  } catch (error) {
+    // Don't fail the whole webhook over request auto-approval
+    console.error(`[stripe-webhook] Failed to auto-approve bid request for session ${sessionId}:`, error.message)
+  }
+}
