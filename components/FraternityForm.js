@@ -16,7 +16,7 @@ import Input from '@/components/ui/Input'
 import PhotoUpload from '@/components/PhotoUpload'
 import Card from '@/components/ui/Card'
 
-export default function FraternityForm({ 
+export default function FraternityForm({
   schoolId,
   userId,
   onSubmit,
@@ -31,7 +31,7 @@ export default function FraternityForm({
   const [description, setDescription] = useState('')
   const [validationErrors, setValidationErrors] = useState({})
   const [pendingSubmit, setPendingSubmit] = useState(false)
-  
+
   // Debug: Log when photo state changes
   useEffect(() => {
     if (photo_url) {
@@ -81,13 +81,13 @@ export default function FraternityForm({
     }
 
     // Duplicate detection is handled by backend - it will block creation if duplicate found
-    
+
     // Ensure type is set before submitting
     // Double-check by reading from form element as fallback in case state is out of sync
     const form = e.currentTarget
     const checkedRadio = form.querySelector('input[name="type"]:checked')
     const formType = checkedRadio?.value || type
-    
+
     if (!formType || typeof formType !== 'string' || !['Fraternity', 'Sorority', 'Other'].includes(formType.trim())) {
       setValidationErrors({ ...validationErrors, type: 'Please select a type (Fraternity, Sorority, or Other)' })
       setPendingSubmit(false)
@@ -104,9 +104,9 @@ export default function FraternityForm({
     }
 
     // Debug logging (remove in production)
-    console.log('FraternityForm submitting:', { 
-      ...fraternityData, 
-      photo_url: photo_url ? (photo_url.substring(0, 50) + '...') : null, 
+    console.log('FraternityForm submitting:', {
+      ...fraternityData,
+      photo_url: photo_url ? (photo_url.substring(0, 50) + '...') : null,
       type: formType,
       photo_url_length: photo_url ? photo_url.length : 0
     })
@@ -197,7 +197,7 @@ export default function FraternityForm({
             error={validationErrors.verificationEmail}
           />
           <p className="text-caption text-gray-medium mt-1">
-            If your fraternity has an official email, we can verify it for faster verification. Otherwise, you'll be verified once you have 7+ verified members.
+            If your fraternity has an official email, we can verify it for faster verification. Otherwise, you&apos;ll be verified once you have 7+ verified members.
           </p>
         </div>
 

@@ -24,10 +24,10 @@ const TABS = {
 export default function FriendsPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const { 
-    friends, 
-    receivedRequests, 
-    sentRequests, 
+  const {
+    friends,
+    receivedRequests,
+    sentRequests,
     suggestions,
     loading: friendContextLoading,
     error: friendContextError,
@@ -163,11 +163,10 @@ export default function FriendsPage() {
             <button
               key={key}
               onClick={() => setActiveTab(value)}
-              className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${
-                activeTab === value
+              className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 ${activeTab === value
                   ? 'border-primary-ui text-primary-ui'
                   : 'border-transparent text-gray-medium hover:text-gray-dark'
-              }`}
+                }`}
             >
               {key.charAt(0) + key.slice(1).toLowerCase()}
               {value === TABS.REQUESTS && requests.length > 0 && (
@@ -246,7 +245,7 @@ export default function FriendsPage() {
                 <Card variant="default" className="p-8 text-center">
                   <p className="text-gray-medium">No pending requests</p>
                   <p className="text-sm text-gray-medium mt-2">
-                    Friend requests you send will appear here until they're accepted
+                    Friend requests you send will appear here until they&apos;re accepted
                   </p>
                 </Card>
               ) : (

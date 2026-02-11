@@ -25,36 +25,36 @@ const getTypeLabel = (type) => {
   return TYPE_MAP[type?.toLowerCase()] || type || 'Other'
 }
 
-function FraternityCard({ 
-  fraternity, 
-  onClick, 
-  showMemberCount = false, 
-  variant = 'default' 
+function FraternityCard({
+  fraternity,
+  onClick,
+  showMemberCount = false,
+  variant = 'default'
 }) {
-  if (!fraternity) {
-    return null
-  }
-
   // Memoize type label
-  const typeLabel = useMemo(() => getTypeLabel(fraternity.type), [fraternity.type])
+  const typeLabel = useMemo(() => getTypeLabel(fraternity?.type), [fraternity?.type])
 
   // Memoize onClick handler - maintain original behavior (onClick called without params)
   const handleClick = useCallback((e) => {
     onClick?.(e)
   }, [onClick])
 
+  if (!fraternity) {
+    return null
+  }
+
   // Compact variant - minimal info
   if (variant === 'compact') {
     return (
-      <Card 
-        variant="flat" 
+      <Card
+        variant="flat"
         className={`border border-gray-border ${onClick ? 'cursor-pointer hover:border-primary-ui transition-colors' : ''}`}
         onClick={handleClick}
       >
         <div className="flex items-center gap-3">
           {fraternity.photo_url && (
-            <Avatar 
-              src={fraternity.photo_url} 
+            <Avatar
+              src={fraternity.photo_url}
               alt={fraternity.name}
               size="sm"
               className="flex-shrink-0"
@@ -84,8 +84,8 @@ function FraternityCard({
   // Detailed variant - full info
   if (variant === 'detailed') {
     return (
-      <Card 
-        variant="default" 
+      <Card
+        variant="default"
         className={`${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
         onClick={handleClick}
       >
@@ -93,8 +93,8 @@ function FraternityCard({
           {/* Header with photo and name */}
           <div className="flex items-start gap-4">
             {fraternity.photo_url && (
-              <Avatar 
-                src={fraternity.photo_url} 
+              <Avatar
+                src={fraternity.photo_url}
                 alt={fraternity.name}
                 size="large"
               />
@@ -133,8 +133,8 @@ function FraternityCard({
 
   // Default variant - standard card
   return (
-    <Card 
-      variant="flat" 
+    <Card
+      variant="flat"
       className={`border border-gray-border ${onClick ? 'cursor-pointer hover:border-primary-ui transition-colors' : ''}`}
       onClick={handleClick}
     >
@@ -142,8 +142,8 @@ function FraternityCard({
         {/* Header */}
         <div className="flex items-start gap-3">
           {fraternity.photo_url && (
-            <Avatar 
-              src={fraternity.photo_url} 
+            <Avatar
+              src={fraternity.photo_url}
               alt={fraternity.name}
               size="medium"
             />

@@ -10,13 +10,9 @@ import Avatar from '@/components/ui/Avatar'
 import { formatTimeAgo } from '@/lib/utils/timeFormatting'
 
 function MessageRequestCard({ request, onAccept, onDecline, loading = false }) {
-  if (!request) {
-    return null
-  }
-
   // Request can have requester info or conversation info
-  const requester = request.requester || request.user
-  const created_at = request.created_at
+  const requester = request?.requester || request?.user
+  const created_at = request?.created_at
 
   const handleAccept = useCallback(() => {
     onAccept?.(request)
@@ -26,7 +22,7 @@ function MessageRequestCard({ request, onAccept, onDecline, loading = false }) {
     onDecline?.(request)
   }, [onDecline, request])
 
-  if (!requester) {
+  if (!request || !requester) {
     return null
   }
 

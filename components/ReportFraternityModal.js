@@ -14,9 +14,9 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { reportFraternityAction } from '@/app/actions/fraternity'
 
-export default function ReportFraternityModal({ 
-  isOpen, 
-  onClose, 
+export default function ReportFraternityModal({
+  isOpen,
+  onClose,
   fraternityId,
   fraternityName
 }) {
@@ -118,7 +118,7 @@ export default function ReportFraternityModal({
               Report Fraternity
             </h3>
             <p className="text-bodySmall text-gray-dark mb-4">
-              Report "{fraternityName}" for review
+              Report &quot;{fraternityName}&quot; for review
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">

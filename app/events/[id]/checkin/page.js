@@ -101,7 +101,7 @@ export default function CheckInPage() {
   const handleQRScan = async (qrCode) => {
     setScanError(null)
     setScanSuccess(false)
-    
+
     try {
       // Extract userId and eventId from QR code
       // Format: user-${userId}-${eventId}
@@ -110,15 +110,15 @@ export default function CheckInPage() {
         setScanError('Invalid QR code format')
         return
       }
-      
+
       const [, userId, eventIdFromQR] = match
-      
+
       // Verify eventId matches current event
       if (eventIdFromQR !== eventId) {
         setScanError('QR code is for a different event')
         return
       }
-      
+
       // Show confirmation modal instead of checking in immediately
       // This allows admin to verify the person matches the profile
       setPendingCheckIn({ userId, qrCode })
@@ -131,11 +131,11 @@ export default function CheckInPage() {
 
   const handleConfirmCheckIn = async () => {
     if (!pendingCheckIn) return
-    
+
     setShowConfirmation(false)
     setScanError(null)
     setScanSuccess(false)
-    
+
     try {
       const { data, error } = await checkInUserAction(
         eventId,
@@ -143,7 +143,7 @@ export default function CheckInPage() {
         pendingCheckIn.qrCode,
         user.id
       )
-      
+
       if (error) {
         setScanError(error.message)
       } else {
@@ -215,11 +215,11 @@ export default function CheckInPage() {
               >
                 ← Back
               </Button>
-            <div>
-              <h1 className="text-xl font-bold text-neutral-black">Check-In Scanner</h1>
-              {event && (
-                <p className="text-sm text-gray-medium mt-1">{event.title}</p>
-              )}
+              <div>
+                <h1 className="text-xl font-bold text-neutral-black">Check-In Scanner</h1>
+                {event && (
+                  <p className="text-sm text-gray-medium mt-1">{event.title}</p>
+                )}
               </div>
             </div>
             <Button
@@ -240,13 +240,13 @@ export default function CheckInPage() {
               scanning={scanning}
             />
           )}
-          
+
           {scanSuccess && (
             <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-600 font-medium">✓ User checked in successfully!</p>
             </div>
           )}
-          
+
           {scanError && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600">{scanError}</p>
@@ -255,7 +255,7 @@ export default function CheckInPage() {
 
           {!scanning && (
             <Card className="p-8 text-center mt-4">
-              <p className="text-gray-medium">Click "Start Scanning" to begin checking in attendees</p>
+              <p className="text-gray-medium">Click &quot;Start Scanning&quot; to begin checking in attendees</p>
             </Card>
           )}
         </div>

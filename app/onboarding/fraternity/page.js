@@ -8,9 +8,9 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { getCampus } from '@/app/actions/profile'
-import { 
-  getUserFraternitiesAction, 
-  searchFraternitiesAction, 
+import {
+  getUserFraternitiesAction,
+  searchFraternitiesAction,
   createFraternityAction,
   addMemberAction
 } from '@/app/actions/fraternity'
@@ -102,7 +102,7 @@ function FraternitySelectionPageContent() {
 
     try {
       const { data, error: addError } = await addMemberAction(fraternityId, user.id, 'member')
-      
+
       if (addError) {
         setError(addError.message || 'Failed to join fraternity')
         setSubmitting(false)
@@ -135,7 +135,7 @@ function FraternitySelectionPageContent() {
 
     try {
       const { data, error: createError } = await createFraternityAction(fraternityData)
-      
+
       if (createError) {
         // Check if it's a duplicate error
         if (createError.message?.toLowerCase().includes('duplicate')) {
@@ -150,7 +150,7 @@ function FraternitySelectionPageContent() {
         // Successfully created - creator is already added as admin by createFraternity function
         // Refresh fraternity context to include new fraternity before redirecting
         await refreshFraternities()
-        
+
         // Redirect to home page (which will show dashboard since user is now admin)
         const returnTo = searchParams.get('returnTo') || '/'
         router.push(returnTo)
@@ -217,10 +217,10 @@ function FraternitySelectionPageContent() {
           <Card>
             <div className="mb-8">
               <h1 className="text-heading1 text-neutral-black mb-2">
-                You're Already Part of a Fraternity
+                You&apos;re Already Part of a Fraternity
               </h1>
               <p className="text-bodySmall text-gray-medium">
-                You're already a member of {userFraternities.length} fraternity{userFraternities.length !== 1 ? 'ies' : ''}.
+                You&apos;re already a member of {userFraternities.length} fraternity{userFraternities.length !== 1 ? 'ies' : ''}.
               </p>
             </div>
             <div className="space-y-3">
@@ -255,7 +255,7 @@ function FraternitySelectionPageContent() {
           <Card>
             <div className="mb-8">
               <h1 className="text-heading1 text-neutral-black mb-2">
-                Great! You're connected to {schoolName || 'your school'}
+                Great! You&apos;re connected to {schoolName || 'your school'}
               </h1>
               <p className="text-bodySmall text-gray-medium">
                 Join or create a fraternity to start hosting events
@@ -269,7 +269,7 @@ function FraternitySelectionPageContent() {
                 size="large"
                 className="w-full"
               >
-                I'm part of a fraternity
+                I&apos;m part of a fraternity
               </Button>
               <Button
                 onClick={() => setMode('create')}

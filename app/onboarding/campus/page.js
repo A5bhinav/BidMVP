@@ -32,19 +32,19 @@ function CampusSelectionPageContent() {
 
     // Wait for auth to load
     if (authLoading) return
-    
+
     // Prevent multiple initializations - only run once when user is available
     // BUT: Reset the ref if user changes (e.g., on refresh)
     if (initializedRef.current && user?.id) {
       // Already initialized for this user - don't run again
       return
     }
-    
+
     // Reset ref if user changed (shouldn't happen, but safety check)
     if (initializedRef.current && !user?.id) {
       initializedRef.current = false
     }
-    
+
     const initialize = async () => {
       // Check if user is authenticated
       if (!user) {
@@ -82,18 +82,18 @@ function CampusSelectionPageContent() {
 
       try {
         console.log('Starting campus detection for user:', user.id, 'email:', user.email)
-        
+
         // First, check if user already has a school linked
         // If they do, show that as the detected campus for confirmation
         console.log('Checking for existing campus...')
         const { data: existingCampus, error: campusError } = await getCampus(user.id)
         console.log('getCampus result:', { hasCampus: !!existingCampus, hasId: !!existingCampus?.id, id: existingCampus?.id, error: campusError?.message })
-        
+
         if (!mounted) {
           if (timeoutId) clearTimeout(timeoutId)
           return
         }
-        
+
         if (!campusError && existingCampus && existingCampus.id) {
           // Mark detection as complete and clear timeout
           detectionCompleteRef.current = true
@@ -112,7 +112,7 @@ function CampusSelectionPageContent() {
           // Mark detection as complete - this will trigger the useEffect below
           setDetectionComplete(true)
           initializedRef.current = true
-          
+
           console.log('State updated: setDetecting(false) called, detectedCampus set')
           return
         }
@@ -171,14 +171,14 @@ function CampusSelectionPageContent() {
         initializedRef.current = true
       } catch (err) {
         if (!mounted) return
-        
+
         // Mark detection as complete (even if it errored)
         detectionCompleteRef.current = true
         if (timeoutId) {
           clearTimeout(timeoutId)
           timeoutId = null
         }
-        
+
         console.error('Unexpected error detecting campus:', err)
         // Don't show error - just show search UI
         setDetectedCampus(null)
@@ -199,7 +199,7 @@ function CampusSelectionPageContent() {
     // Use specific user properties to avoid re-runs when user object reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id, user?.email])
-  
+
   // Separate effect to handle detection completion
   // This ensures React processes the state update even if the main effect doesn't re-run
   useEffect(() => {
@@ -208,7 +208,7 @@ function CampusSelectionPageContent() {
       setDetecting(false)
     }
   }, [detectionComplete, detecting])
-  
+
 
   // Handle confirming auto-detected campus
   const handleConfirmDetected = async () => {
@@ -365,7 +365,7 @@ function CampusSelectionPageContent() {
               Select Your Campus
             </h1>
             <p className="text-bodySmall text-gray-medium">
-              We'll use this to connect you with events at your school
+              We&apos;ll use this to connect you with events at your school
             </p>
           </div>
 

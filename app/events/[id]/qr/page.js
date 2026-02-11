@@ -16,28 +16,28 @@ import LayoutWrapper from '@/components/LayoutWrapper'
 function formatDate(dateString) {
   if (!dateString) return ''
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
+  return date.toLocaleDateString('en-US', {
     weekday: 'short',
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   })
 }
 
 function formatTime(dateString) {
   if (!dateString) return ''
   const date = new Date(dateString)
-  return date.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: true 
+    hour12: true
   })
 }
 
 // Parse event location to coordinates
 async function parseEventLocation(location) {
   if (!location) return null
-  
+
   // Check if it's a coordinate format (lat,lng)
   const latLngPattern = /^-?\d+\.?\d*,-?\d+\.?\d*$/
   if (latLngPattern.test(location.trim())) {
@@ -46,7 +46,7 @@ async function parseEventLocation(location) {
       return { lat, lng }
     }
   }
-  
+
   // Otherwise, geocode the address using server action
   const { data, error } = await geocodeAddressAction(location)
   if (error || !data) {
@@ -142,7 +142,7 @@ export default function QRDisplayPage() {
 
         // Generate QR code string
         const qrCodeString = `user-${user.id}-${eventId}`
-        
+
         // Dynamically import QRCode library only when needed (heavy dependency)
         try {
           const QRCode = (await import('qrcode')).default
@@ -164,7 +164,7 @@ export default function QRDisplayPage() {
           console.error('Error importing QRCode library:', importError)
           setApprovalError('Failed to load QR code generator')
         }
-        
+
         // Check if user is already checked in
         checkCheckInStatus()
       } catch (err) {
@@ -216,7 +216,7 @@ export default function QRDisplayPage() {
         <div className="min-h-screen bg-gray-bg p-4">
           <Card className="p-8 text-center">
             <h1 className="text-xl font-bold mb-4">Event not found</h1>
-            <p className="text-gray-medium">The event you're looking for doesn't exist.</p>
+            <p className="text-gray-medium">The event you&apos;re looking for doesn&apos;t exist.</p>
           </Card>
         </div>
       </LayoutWrapper>
@@ -246,7 +246,7 @@ export default function QRDisplayPage() {
             </p>
             {event.visibility !== 'public' && (
               <p className="text-bodySmall text-gray-medium mb-4">
-                This is an {event.visibility === 'invite-only' ? 'invite-only' : 'rush-only'} event. 
+                This is an {event.visibility === 'invite-only' ? 'invite-only' : 'rush-only'} event.
                 You need to request access and be approved by the event host before you can check in.
               </p>
             )}
@@ -334,7 +334,7 @@ export default function QRDisplayPage() {
           <ol className="list-decimal list-inside space-y-2 text-bodySmall text-gray-medium">
             <li>Show this QR code to the event host</li>
             <li>The host will scan it to check you in</li>
-            <li>Keep this page open until you're checked in</li>
+            <li>Keep this page open until you&apos;re checked in</li>
             {eventLocation && (
               <li>Enable location tracking after check-in for automatic check-out</li>
             )}

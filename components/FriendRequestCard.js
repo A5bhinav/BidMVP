@@ -10,12 +10,6 @@ import Avatar from '@/components/ui/Avatar'
 import { formatTimeAgo } from '@/lib/utils/timeFormatting'
 
 function FriendRequestCard({ request, onAccept, onDeny, loading = false }) {
-  if (!request || !request.user) {
-    return null
-  }
-
-  const { user, created_at } = request
-
   const handleAccept = useCallback(() => {
     onAccept?.(request)
   }, [onAccept, request])
@@ -23,6 +17,12 @@ function FriendRequestCard({ request, onAccept, onDeny, loading = false }) {
   const handleDeny = useCallback(() => {
     onDeny?.(request)
   }, [onDeny, request])
+
+  if (!request || !request.user) {
+    return null
+  }
+
+  const { user, created_at } = request
 
   return (
     <Card variant="default" className="p-4">

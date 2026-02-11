@@ -20,23 +20,23 @@ function RequestCard({
   selected = false,
   onSelect,
 }) {
+  const handleApprove = useCallback(() => {
+    onApprove?.(request?.id)
+  }, [onApprove, request?.id])
+
+  const handleDeny = useCallback(() => {
+    onDeny?.(request?.id)
+  }, [onDeny, request?.id])
+
+  const handleSelect = useCallback((e) => {
+    onSelect?.(request?.id, e.target.checked)
+  }, [onSelect, request?.id])
+
   if (!request || !request.user) {
     return null
   }
 
   const { user, safety_tier, requested_at, status } = request
-
-  const handleApprove = useCallback(() => {
-    onApprove?.(request.id)
-  }, [onApprove, request.id])
-
-  const handleDeny = useCallback(() => {
-    onDeny?.(request.id)
-  }, [onDeny, request.id])
-
-  const handleSelect = useCallback((e) => {
-    onSelect?.(request.id, e.target.checked)
-  }, [onSelect, request.id])
 
   return (
     <Card variant="default" className="p-4">

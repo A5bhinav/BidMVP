@@ -102,7 +102,7 @@ const EventForm = forwardRef(function EventForm({
           // Allow today's date (set time to start of day for comparison)
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
           const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
-          
+
           if (eventDateOnly < today) {
             errors.date = 'Event date must be today or in the future'
           }
@@ -117,7 +117,7 @@ const EventForm = forwardRef(function EventForm({
       try {
         const startDate = new Date(date)
         let endDate = new Date(endTime)
-        
+
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           errors.end_time = 'Invalid date/time format'
         } else {
@@ -128,7 +128,7 @@ const EventForm = forwardRef(function EventForm({
             // Compare just the time portions (hours and minutes)
             const startTimeOnly = startDate.getHours() * 60 + startDate.getMinutes()
             const endTimeOnly = endDate.getHours() * 60 + endDate.getMinutes()
-            
+
             // If end time is earlier in the day, it's likely the next day
             if (endTimeOnly < startTimeOnly) {
               // Add one day to end date
@@ -139,7 +139,7 @@ const EventForm = forwardRef(function EventForm({
               errors.end_time = 'End time must be after start time'
             }
           }
-          
+
           // Final check: end date should be after start date
           if (endDate <= startDate && !errors.end_time) {
             errors.end_time = 'End time must be after start time'
@@ -255,13 +255,13 @@ const EventForm = forwardRef(function EventForm({
 
     const startDate = new Date(date)
     let endDate = new Date(isoString)
-    
+
     // If end time is earlier than start time, assume it's the next day
     // This handles events that span midnight (e.g., 9 PM to 1 AM)
     if (endDate <= startDate) {
       const startTimeOnly = startDate.getHours() * 60 + startDate.getMinutes()
       const endTimeOnly = endDate.getHours() * 60 + endDate.getMinutes()
-      
+
       // If end time is earlier in the day, it's the next day
       if (endTimeOnly < startTimeOnly) {
         endDate = new Date(endDate)
@@ -276,7 +276,7 @@ const EventForm = forwardRef(function EventForm({
       // End time is already after start time, use as-is
       setEndTime(isoString)
     }
-    
+
     // Clear validation error if it exists
     if (validationErrors.end_time) {
       setValidationErrors({ ...validationErrors, end_time: null })
@@ -288,7 +288,7 @@ const EventForm = forwardRef(function EventForm({
     const fraternityId = frat.fraternity?.id || frat.id
     return fraternityId === selectedFratId
   })
-  const selectedFraternityName = selectedFraternity 
+  const selectedFraternityName = selectedFraternity
     ? (selectedFraternity.fraternity?.name || selectedFraternity.name)
     : null
 
@@ -308,7 +308,7 @@ const EventForm = forwardRef(function EventForm({
               </Badge>
             )}
           </div>
-          
+
           {userFraternities.length > 1 ? (
             // Multiple fraternities - show dropdown
             <>
@@ -370,10 +370,10 @@ const EventForm = forwardRef(function EventForm({
               </div>
             </div>
           )}
-          
+
           {isAutoSelected && selectedFratId && (
             <p className="text-caption text-gray-medium mt-2">
-              {userFraternities.length === 1 
+              {userFraternities.length === 1
                 ? 'This fraternity was automatically selected because it\'s the only verified fraternity you can create events for.'
                 : 'This fraternity was pre-selected based on your current context. You can change it if needed.'
               }
@@ -653,7 +653,7 @@ const EventForm = forwardRef(function EventForm({
         />
         {!validationErrors.location && (
           <p className="text-caption text-gray-medium mt-1">
-            {location.length}/200 characters - Enter event address (e.g., '123 Main St, Berkeley, CA') for automatic check-out
+            {location.length}/200 characters - Enter event address (e.g., &apos;123 Main St, Berkeley, CA&apos;) for automatic check-out
           </p>
         )}
       </div>

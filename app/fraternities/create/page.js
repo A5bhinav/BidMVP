@@ -80,7 +80,7 @@ function CreateFraternityPageContent() {
       // Convert type from capitalized to lowercase for backend
       // Handle any case variations
       const typeLower = String(fraternityData.type).toLowerCase().trim()
-      
+
       // Validate converted type matches expected values
       const validTypes = ['fraternity', 'sorority', 'other']
       if (!validTypes.includes(typeLower)) {
@@ -98,8 +98,8 @@ function CreateFraternityPageContent() {
       }
 
       // Debug logging (remove in production)
-      console.log('Creating fraternity with data:', { 
-        ...backendData, 
+      console.log('Creating fraternity with data:', {
+        ...backendData,
         photo_url: backendData.photo_url ? (backendData.photo_url.substring(0, 50) + '...') : null,
         photo_url_length: backendData.photo_url ? backendData.photo_url.length : 0
       })
@@ -231,7 +231,7 @@ function CreateFraternityPageContent() {
             Create Fraternity
           </h1>
           <p className="text-bodySmall text-gray-medium">
-            Create a new fraternity or sorority group. You'll become an admin automatically.
+            Create a new fraternity or sorority group. You&apos;ll become an admin automatically.
           </p>
         </div>
 
